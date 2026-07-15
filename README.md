@@ -105,21 +105,47 @@ Schema notes: [docs/database.md](docs/database.md).
 
 ## Tests and quality checks
 
+Production `backend` image stays minimal (no ruff/mypy/pytest). Use the Compose **`backend-test`** service (Dockerfile `development` target + `[dev]` extras):
+
 ```bash
-# Backend
+docker compose run --rm backend-test ruff check .
+docker compose run --rm backend-test ruff format --check .
+docker compose run --rm backend-test mypy .
+docker compose run --rm backend-test pytest
+```
+
+`backend-test` mounts `./backend`, installs the `dev` dependency group, and can reach Postgres at `db:5432` when tests need it (current suite uses in-memory SQLite).
+
+Host-side alternative:
+
+```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 ruff check .
 ruff format --check .
-mypy
+mypy .
 pytest
+```
 
-# Frontend
-cd frontend
-npm ci
-npx tsc --noEmit
-npm run build
+Frontend (with stack running):
+
+```bash
+docker compose exec frontend npm run build
+```
+
+### Full verification suite
+
+```bash
+docker compose down -v
+docker compose up --build -d
+docker compose ps
+curl -i http://localhost:8000/health
+docker compose run --rm backend-test ruff check .
+docker compose run --rm backend-test ruff format --check .
+docker compose run --rm backend-test mypy .
+docker compose run --rm backend-test pytest
+docker compose exec frontend npm run build
 ```
 
 See [docs/testing.md](docs/testing.md).

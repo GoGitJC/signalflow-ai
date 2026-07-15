@@ -16,7 +16,9 @@ services:
       - "5432:5432"
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      target: production
     env_file: .env
     environment:
       SIGNALFLOW_DATABASE_URL: postgresql+psycopg://signalflow:signalflow@db:5432/signalflow
@@ -39,6 +41,22 @@ services:
       timeout: 5s
       retries: 10
       start_period: 25s
+
+  # Quality checks and unit tests (dev extras only — not used for runtime).
+  # Usage: docker compose run --rm backend-test ruff check .
+  backend-test:
+    build:
+      context: ./backend
+      target: development
+    working_dir: /app
+    environment:
+      SIGNALFLOW_DATABASE_URL: postgresql+psycopg://signalflow:signalflow@db:5432/signalflow
+      SIGNALFLOW_MOCK_EXTERNAL_SERVICES: "true"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
