@@ -1,6 +1,7 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -20,14 +21,22 @@ def uuid_str() -> str:
     return str(uuid.uuid4())
 
 
+def utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+def _str_enum_values(enum_cls: type[enum.Enum]) -> list[str]:
+    return [item.value for item in enum_cls]
+
+
 class Base(DeclarativeBase):
     pass
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
 
 
@@ -41,6 +50,25 @@ class IntegrationProvider(str, enum.Enum):
     retell = "retell"
     twilio = "twilio"
     calcom = "calcom"
+
+
+# create_type=False: Alembic owns PostgreSQL ENUM DDL. Models must not create types.
+user_role_enum: Any = Enum(
+    UserRole,
+    name="userrole",
+    native_enum=True,
+    create_constraint=False,
+    create_type=False,
+    values_callable=_str_enum_values,
+)
+integration_provider_enum: Any = Enum(
+    IntegrationProvider,
+    name="integrationprovider",
+    native_enum=True,
+    create_constraint=False,
+    create_type=False,
+    values_callable=_str_enum_values,
+)
 
 
 class Business(Base, TimestampMixin):
@@ -69,8 +97,8 @@ class User(Base):
     )
     name: Mapped[str] = mapped_column(String(200))
     email: Mapped[str] = mapped_column(String(320), unique=True)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.owner)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    role: Mapped[UserRole] = mapped_column(user_role_enum, default=UserRole.owner)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     business: Mapped[Business] = relationship(back_populates="users")
 
@@ -114,7 +142,7 @@ class Caller(Base):
     name: Mapped[str | None] = mapped_column(String(200))
     phone: Mapped[str] = mapped_column(String(32))
     email: Mapped[str | None] = mapped_column(String(320))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class Call(Base):
@@ -158,7 +186,7 @@ class Appointment(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(40), default="booked")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class Integration(Base):
@@ -169,7 +197,7 @@ class Integration(Base):
     business_id: Mapped[str] = mapped_column(
         ForeignKey("businesses.id", ondelete="CASCADE"), index=True
     )
-    provider: Mapped[IntegrationProvider] = mapped_column(Enum(IntegrationProvider))
+    provider: Mapped[IntegrationProvider] = mapped_column(integration_provider_enum)
     encrypted_credentials: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -182,4 +210,4 @@ class WebhookEvent(Base):
     provider: Mapped[str] = mapped_column(String(40), index=True)
     event_key: Mapped[str] = mapped_column(String(128), index=True)
     event_type: Mapped[str] = mapped_column(String(100))
-    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

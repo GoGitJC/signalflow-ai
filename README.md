@@ -39,7 +39,8 @@ See [docs/architecture.md](docs/architecture.md) for deeper detail.
 
 ```bash
 cp .env.example .env
-docker compose up --build
+./scripts/dev-up.sh
+# reset DB volume if needed: ./scripts/dev-up.sh --reset
 ```
 
 | Service | URL |

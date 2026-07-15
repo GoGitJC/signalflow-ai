@@ -13,7 +13,12 @@
 | `userrole` | `owner`, `admin`, `member` |
 | `integrationprovider` | `retell`, `twilio`, `calcom` |
 
-Created explicitly once in `0001_initial`, then referenced with `create_type=False`.
+**Lifecycle (required):**
+
+1. Alembic creates each PostgreSQL enum once via `postgresql.ENUM(...).create(..., checkfirst=True)`.
+2. Table DDL references the same types with `create_type=False` so `CREATE TABLE` does not emit a second `CREATE TYPE`.
+3. ORM columns in `entities.py` also use named enums with `create_type=False` so `metadata.create_all` (tests) never fights Alembic on PostgreSQL.
+4. Downgrade drops tables first, then enum types.
 
 ## Tables
 

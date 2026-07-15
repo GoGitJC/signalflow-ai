@@ -9,7 +9,14 @@
 
 ```bash
 cp .env.example .env
-docker compose up --build
+./scripts/dev-up.sh
+# or from a clean volume: ./scripts/dev-up.sh --reset
+```
+
+Equivalent Compose commands:
+
+```bash
+docker compose up --build -d
 ```
 
 Services:
@@ -17,8 +24,8 @@ Services:
 | Service | Port | Notes |
 |---------|------|-------|
 | `db` | 5432 | Postgres 16, healthchecked |
-| `backend` | 8000 | runs `alembic upgrade head` then uvicorn |
-| `frontend` | 5173 | Vite dev server |
+| `backend` | 8000 | `alembic upgrade head` then uvicorn; Compose healthcheck on `/health` |
+| `frontend` | 5173 | Vite dev server (waits for healthy backend) |
 
 Verify:
 

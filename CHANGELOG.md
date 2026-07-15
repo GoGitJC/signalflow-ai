@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- `scripts/dev-up.sh` for one-command local stack start (optional `--reset`).
+- Compose backend healthcheck; frontend waits for healthy backend.
+- Expanded `.env.example` comments for Twelve-Factor local setup.
+
+### Changed
+
+- Backend Dockerfile installs the package with `app/` and `alembic/` present so wheels include application code.
+- ORM enums use named types with `create_type=False` so models never emit `CREATE TYPE` (Alembic owns enum DDL).
+- Timezone-aware `utcnow()` helpers replace deprecated `datetime.utcnow`.
+
+### Fixed
+
+- Foundation verification: clean `docker compose down -v` + `up --build` migrates once, backend stays healthy, `/health` returns 200.
+
+## [0.1.1] - 2026-07-14
+
+### Added
+
 - Phase 11 project governance: polished README, `docs/` suite, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, LICENSE, issue/PR templates, Dependabot, and GitHub Actions CI.
 - Backend mypy configuration for CI typing checks.
 
