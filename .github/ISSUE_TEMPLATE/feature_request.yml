@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose an enhancement for SignalFlow AI
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Check PHASES.md and existing issues before filing duplicates.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or operator problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Related delivery phase
+      options:
+        - Phase 2 — Auth
+        - Phase 3 — Providers
+        - Phase 4 — Orchestration
+        - Phase 5 — Dashboard
+        - Phase 6 — Async / observability
+        - Phase 7 — Deployment
+        - Unsure / other
+    validations:
+      required: true

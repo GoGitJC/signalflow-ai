@@ -1,0 +1,185 @@
+import enum
+import uuid
+from datetime import datetime
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+
+
+def uuid_str() -> str:
+    return str(uuid.uuid4())
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class TimestampMixin:
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class UserRole(str, enum.Enum):
+    owner = "owner"
+    admin = "admin"
+    member = "member"
+
+
+class IntegrationProvider(str, enum.Enum):
+    retell = "retell"
+    twilio = "twilio"
+    calcom = "calcom"
+
+
+class Business(Base, TimestampMixin):
+    __tablename__ = "businesses"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    industry: Mapped[str | None] = mapped_column(String(120))
+    phone_number: Mapped[str | None] = mapped_column(String(32))
+    forwarding_number: Mapped[str | None] = mapped_column(String(32))
+    timezone: Mapped[str] = mapped_column(String(64), default="America/Chicago")
+    business_hours: Mapped[dict] = mapped_column(JSON, default=dict)
+    service_area: Mapped[str | None] = mapped_column(Text)
+
+    users: Mapped[list["User"]] = relationship(
+        back_populates="business", cascade="all, delete-orphan"
+    )
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(200))
+    email: Mapped[str] = mapped_column(String(320), unique=True)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.owner)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+    business: Mapped[Business] = relationship(back_populates="users")
+
+
+class VoiceAgent(Base):
+    __tablename__ = "voice_agents"
+    __table_args__ = (UniqueConstraint("business_id", "retell_agent_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    retell_agent_id: Mapped[str] = mapped_column(String(200))
+    name: Mapped[str] = mapped_column(String(200))
+    greeting: Mapped[str] = mapped_column(Text)
+    system_prompt: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class KnowledgeBaseEntry(Base):
+    __tablename__ = "knowledge_base_entries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    category: Mapped[str] = mapped_column(String(120), default="general")
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Caller(Base):
+    __tablename__ = "callers"
+    __table_args__ = (UniqueConstraint("business_id", "phone", name="uq_caller_business_phone"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str | None] = mapped_column(String(200))
+    phone: Mapped[str] = mapped_column(String(32))
+    email: Mapped[str | None] = mapped_column(String(320))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class Call(Base):
+    __tablename__ = "calls"
+    __table_args__ = (UniqueConstraint("retell_call_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    caller_id: Mapped[str | None] = mapped_column(
+        ForeignKey("callers.id", ondelete="SET NULL"), index=True
+    )
+    retell_call_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    direction: Mapped[str] = mapped_column(String(20), default="inbound")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    transcript: Mapped[str | None] = mapped_column(Text)
+    summary: Mapped[str | None] = mapped_column(Text)
+    intent: Mapped[str | None] = mapped_column(String(120))
+    urgency: Mapped[str | None] = mapped_column(String(40))
+    outcome: Mapped[str | None] = mapped_column(String(80))
+    recording_url: Mapped[str | None] = mapped_column(Text)
+    appointment_booked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    caller_id: Mapped[str] = mapped_column(ForeignKey("callers.id", ondelete="CASCADE"), index=True)
+    call_id: Mapped[str | None] = mapped_column(
+        ForeignKey("calls.id", ondelete="SET NULL"), index=True
+    )
+    cal_event_id: Mapped[str | None] = mapped_column(String(200), unique=True)
+    service: Mapped[str] = mapped_column(String(200))
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(40), default="booked")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class Integration(Base):
+    __tablename__ = "integrations"
+    __table_args__ = (UniqueConstraint("business_id", "provider"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[IntegrationProvider] = mapped_column(Enum(IntegrationProvider))
+    encrypted_credentials: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class WebhookEvent(Base):
+    __tablename__ = "webhook_events"
+    __table_args__ = (UniqueConstraint("provider", "event_key", name="uq_webhook_provider_key"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    provider: Mapped[str] = mapped_column(String(40), index=True)
+    event_key: Mapped[str] = mapped_column(String(128), index=True)
+    event_type: Mapped[str] = mapped_column(String(100))
+    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

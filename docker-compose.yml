@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: signalflow
+      POSTGRES_USER: signalflow
+      POSTGRES_PASSWORD: signalflow
+    volumes:
+      - signalflow_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U signalflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      SIGNALFLOW_DATABASE_URL: postgresql+psycopg://signalflow:signalflow@db:5432/signalflow
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_BUSINESS_ID: ${VITE_BUSINESS_ID:-}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+volumes:
+  signalflow_postgres:
