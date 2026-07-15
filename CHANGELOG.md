@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Compose `backend-test` service and Dockerfile `development` target with `[dev]` extras (`pytest`, `ruff`, `mypy`) for quality checks without bloating the production image.
+- README verification suite using `docker compose run --rm backend-test …`.
+- `httpx2` in the backend `[dev]` extras so Starlette `TestClient` stops emitting a deprecation warning.
+
+### Changed
+
+- Backend Dockerfile is multi-stage: `development` (tools) vs `production` (runtime only).
+- `mypy` config excludes `tests/` and `alembic/` so `mypy .` succeeds in Compose.
+
+### Fixed
+
+- Quality tools were missing from the runtime image PATH; they are now available via `backend-test` only.
+- Pytest `StarletteDeprecationWarning` about `httpx` / `TestClient` (install `httpx2`).
+
+## [0.1.2] - 2026-07-14
+
+### Added
+
 - `scripts/dev-up.sh` for one-command local stack start (optional `--reset`).
 - Compose backend healthcheck; frontend waits for healthy backend.
 - Expanded `.env.example` comments for Twelve-Factor local setup.
