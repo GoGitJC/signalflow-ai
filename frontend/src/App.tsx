@@ -1,17 +1,141 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, BookOpen, LayoutDashboard, PhoneCall, Settings } from 'lucide-react';
-import { api, businessId } from './api/client';
-import type { Appointment, Call, KnowledgeEntry } from './types';
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { TopNav } from "@/components/layout/TopNav";
+import { ErrorState } from "@/components/shared/EmptyState";
+import { ToastSystem } from "@/hooks/useToast";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { useTheme } from "@/hooks/useTheme";
+import { AnalyticsPage } from "@/pages/AnalyticsPage";
+import { AppointmentsPage } from "@/pages/AppointmentsPage";
+import { CallsPage } from "@/pages/CallsPage";
+import { CustomersPage } from "@/pages/CustomersPage";
+import { HelpPage } from "@/pages/HelpPage";
+import { KnowledgePage } from "@/pages/KnowledgePage";
+import { OverviewPage } from "@/pages/OverviewPage";
+import { SettingsPage } from "@/pages/SettingsPage";
+import { VoiceAgentPage } from "@/pages/VoiceAgentPage";
+import type { Call, PageId } from "@/types";
 
-type Page='Overview'|'Calls'|'Appointments'|'Knowledge Base'|'Settings';
-const nav:[Page,typeof LayoutDashboard][]=[['Overview',LayoutDashboard],['Calls',PhoneCall],['Appointments',CalendarDays],['Knowledge Base',BookOpen],['Settings',Settings]];
-export default function App(){const [page,setPage]=useState<Page>('Overview');const [calls,setCalls]=useState<Call[]>([]);const [appointments,setAppointments]=useState<Appointment[]>([]);const [kb,setKb]=useState<KnowledgeEntry[]>([]);const [error,setError]=useState('');
-const load=async()=>{if(!businessId){setError('Set VITE_BUSINESS_ID or signalflow_business_id in localStorage.');return;}try{const [c,a,k]=await Promise.all([api.calls(),api.appointments(),api.knowledge()]);setCalls(c);setAppointments(a);setKb(k);}catch(e){setError(e instanceof Error?e.message:'Unable to load dashboard');}};useEffect(()=>{void load()},[]);
-return <div className="min-h-screen flex"><aside className="w-64 bg-slate-950 text-white p-6"><div className="text-xl font-bold mb-1">SignalFlow AI</div><div className="text-xs text-slate-400 mb-8">Receptionist command center</div><nav className="space-y-2">{nav.map(([name,Icon])=><button key={name} onClick={()=>setPage(name)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left ${page===name?'bg-cyan-500 text-slate-950':'hover:bg-slate-800'}`}><Icon size={18}/>{name}</button>)}</nav></aside><main className="flex-1 p-8"><header className="mb-8"><h1 className="text-3xl font-bold">{page}</h1><p className="text-slate-500">Live operations for your AI receptionist.</p></header>{error&&<div className="bg-amber-100 text-amber-900 p-4 rounded-xl mb-6">{error}</div>}<PageView page={page} calls={calls} appointments={appointments} kb={kb} reload={load}/></main></div>}
-function PageView({page,calls,appointments,kb,reload}:{page:Page;calls:Call[];appointments:Appointment[];kb:KnowledgeEntry[];reload:()=>Promise<void>}){if(page==='Overview')return <Overview calls={calls} appointments={appointments}/>;if(page==='Calls')return <Calls calls={calls}/>;if(page==='Appointments')return <Appointments appointments={appointments}/>;if(page==='Knowledge Base')return <Knowledge entries={kb} reload={reload}/>;return <SettingsPage/>}
-const Card=({label,value}:{label:string;value:string|number})=><div className="bg-white rounded-2xl border border-slate-200 p-5"><div className="text-sm text-slate-500">{label}</div><div className="text-3xl font-bold mt-2">{value}</div></div>;
-function Overview({calls,appointments}:{calls:Call[];appointments:Appointment[]}){const today=new Date().toDateString();const todayCalls=calls.filter(c=>c.started_at&&new Date(c.started_at).toDateString()===today);const avg=todayCalls.length?Math.round(todayCalls.reduce((s,c)=>s+(c.duration_seconds||0),0)/todayCalls.length):0;return <><div className="grid grid-cols-4 gap-4 mb-8"><Card label="Calls answered today" value={todayCalls.length}/><Card label="Appointments booked" value={appointments.length}/><Card label="Leads generated" value={calls.filter(c=>c.outcome?.includes('lead')||c.intent==='book_appointment').length}/><Card label="Average call duration" value={`${avg}s`}/></div><h2 className="font-semibold text-xl mb-4">Recent calls</h2><Calls calls={calls.slice(0,5)}/></>}
-function Calls({calls}:{calls:Call[]}){return <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden"><table className="w-full text-left"><thead className="bg-slate-50 text-sm text-slate-500"><tr><th className="p-4">Date</th><th>Intent</th><th>Outcome</th><th>Appointment</th><th>Summary</th></tr></thead><tbody>{calls.map(c=><tr key={c.id} className="border-t border-slate-100 align-top"><td className="p-4 whitespace-nowrap">{c.started_at?new Date(c.started_at).toLocaleString():'—'}</td><td>{c.intent||'Unknown'}</td><td>{c.outcome||'Completed'}</td><td>{c.appointment_booked?'Booked':'—'}</td><td className="py-4 pr-4 max-w-xl"><details><summary className="cursor-pointer">{c.summary||'No summary'}</summary><p className="mt-3 text-sm text-slate-600 whitespace-pre-wrap">{c.transcript||'No transcript'}</p></details></td></tr>)}</tbody></table>{!calls.length&&<div className="p-8 text-slate-500">No calls yet. Post the sample webhook to populate this view.</div>}</div>}
-function Appointments({appointments}:{appointments:Appointment[]}){return <div className="grid gap-4">{appointments.map(a=><div className="bg-white rounded-2xl border p-5 flex justify-between" key={a.id}><div><div className="font-semibold">{a.service}</div><div className="text-slate-500">{new Date(a.start_time).toLocaleString()}</div></div><span className="capitalize">{a.status}</span></div>)}{!appointments.length&&<div className="text-slate-500">No appointments yet.</div>}</div>}
-function Knowledge({entries,reload}:{entries:KnowledgeEntry[];reload:()=>Promise<void>}){const [q,setQ]=useState('');const [a,setA]=useState('');const add=async()=>{if(!q||!a)return;await api.addKnowledge({category:'general',question:q,answer:a,active:true});setQ('');setA('');await reload()};return <div><div className="bg-white border rounded-2xl p-5 mb-6 grid gap-3"><input className="border rounded-lg p-3" placeholder="Question" value={q} onChange={e=>setQ(e.target.value)}/><textarea className="border rounded-lg p-3" placeholder="Answer" value={a} onChange={e=>setA(e.target.value)}/><button onClick={add} className="bg-slate-950 text-white rounded-lg px-4 py-2 w-fit">Add answer</button></div><div className="grid gap-4">{entries.map(e=><div key={e.id} className="bg-white border rounded-2xl p-5"><div className="flex justify-between"><div><div className="font-semibold">{e.question}</div><div className="text-slate-600 mt-2">{e.answer}</div></div><div className="flex gap-2"><button onClick={async()=>{await api.updateKnowledge(e.id,{active:!e.active});await reload()}} className="border rounded-lg px-3">{e.active?'Disable':'Enable'}</button><button onClick={async()=>{await api.deleteKnowledge(e.id);await reload()}} className="text-red-600">Delete</button></div></div></div>)}</div></div>}
-function SettingsPage(){return <div className="bg-white border rounded-2xl p-6"><h2 className="font-semibold text-lg">Connection settings</h2><p className="text-slate-500 mt-2">Business information and provider credentials are managed through the API and environment variables in this first secure local MVP. Credential forms will be enabled with authentication in the next phase.</p><div className="mt-6 text-sm"><strong>Current business ID:</strong> {businessId||'Not configured'}</div></div>}
+export default function App() {
+  return (
+    <ToastSystem>
+      <AppShell />
+    </ToastSystem>
+  );
+}
+
+function AppShell() {
+  const data = useDashboardData();
+  const { theme, toggleTheme } = useTheme();
+  const [page, setPage] = useState<PageId>("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selectedCall, setSelectedCall] = useState<Call | null>(null);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "/" && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) {
+        event.preventDefault();
+        const input = document.querySelector<HTMLInputElement>('input[aria-label="Search calls, appointments, knowledge…"]');
+        input?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const loading = data.status === "loading" || data.status === "idle";
+
+  const openCall = (call: Call) => {
+    setSelectedCall(call);
+    setPage("calls");
+  };
+
+  return (
+    <div className="flex min-h-screen bg-background text-foreground">
+      <Sidebar
+        page={page}
+        onNavigate={(next) => {
+          setSelectedCall(null);
+          setPage(next);
+        }}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopNav
+          search={search}
+          onSearch={setSearch}
+          onMenu={() => setSidebarOpen(true)}
+          onRefresh={() => void data.reload()}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          apiStatus={data.apiOnline ? "online" : "offline"}
+        />
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+          {data.status === "error" && page !== "settings" && page !== "help" && page !== "voice-agent" ? (
+            <ErrorState description={data.error} onRetry={() => void data.reload()} />
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${page}-${selectedCall?.id ?? "list"}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+              >
+                {page === "overview" ? (
+                  <OverviewPage
+                    calls={filterBySearch(data.calls, search)}
+                    appointments={data.appointments}
+                    loading={loading}
+                    apiOnline={data.apiOnline}
+                    onOpenCall={openCall}
+                  />
+                ) : null}
+                {page === "calls" ? (
+                  <CallsPage
+                    calls={filterBySearch(data.calls, search)}
+                    loading={loading}
+                    selected={selectedCall}
+                    onSelect={setSelectedCall}
+                    onBack={() => setSelectedCall(null)}
+                  />
+                ) : null}
+                {page === "appointments" ? (
+                  <AppointmentsPage appointments={data.appointments} loading={loading} />
+                ) : null}
+                {page === "knowledge" ? (
+                  <KnowledgePage
+                    businessId={data.businessId}
+                    entries={data.knowledge}
+                    loading={loading}
+                    onReload={data.reload}
+                  />
+                ) : null}
+                {page === "voice-agent" ? <VoiceAgentPage /> : null}
+                {page === "customers" ? <CustomersPage calls={data.calls} loading={loading} /> : null}
+                {page === "analytics" ? (
+                  <AnalyticsPage calls={data.calls} appointments={data.appointments} loading={loading} />
+                ) : null}
+                {page === "settings" ? <SettingsPage /> : null}
+                {page === "help" ? <HelpPage /> : null}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function filterBySearch(calls: Call[], search: string) {
+  const q = search.trim().toLowerCase();
+  if (!q) return calls;
+  return calls.filter((call) =>
+    [call.intent, call.outcome, call.summary, call.transcript, call.retell_call_id]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(q)),
+  );
+}

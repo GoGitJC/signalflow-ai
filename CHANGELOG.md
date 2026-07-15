@@ -9,19 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
-- Compose `backend-test` service and Dockerfile `development` target with `[dev]` extras (`pytest`, `ruff`, `mypy`) for quality checks without bloating the production image.
+- Premium dashboard redesign: design tokens, shadcn-style component library, dark mode, full sidebar IA, charts, skeletons, empty/error states.
+- `docs/ui.md` for design philosophy, palette, components, typography, responsive behavior, dark mode, and motion.
+- Compose `backend-test` service and Dockerfile `development` target with `[dev]` extras (`pytest`, `ruff`, `mypy`).
 - README verification suite using `docker compose run --rm backend-test …`.
-- `httpx2` in the backend `[dev]` extras so Starlette `TestClient` stops emitting a deprecation warning.
+- `httpx2` in backend `[dev]` extras for Starlette `TestClient`.
 
 ### Changed
 
+- Frontend layout: `components/`, `hooks/`, `lib/`, `pages/`, `types/` with shared API client.
 - Backend Dockerfile is multi-stage: `development` (tools) vs `production` (runtime only).
 - `mypy` config excludes `tests/` and `alembic/` so `mypy .` succeeds in Compose.
 
 ### Fixed
 
-- Quality tools were missing from the runtime image PATH; they are now available via `backend-test` only.
-- Pytest `StarletteDeprecationWarning` about `httpx` / `TestClient` (install `httpx2`).
+- Quality tools missing from runtime image PATH — available via `backend-test` only.
+- Pytest `StarletteDeprecationWarning` for deprecated `httpx` TestClient usage.
 
 ## [0.1.2] - 2026-07-14
 

@@ -173,9 +173,16 @@ Local and CI use Dockerfiles under `backend/` and `frontend/`. Production deploy
 
 ## Screenshots
 
-> Screenshots will be added under `docs/images/` as the dashboard UI stabilizes.
->
-> Suggested captures: Overview, Calls table with transcript expand, Appointments, Knowledge base editor, Settings.
+Add captures under [`docs/images/`](docs/images/) as the UI ships:
+
+| Shot | Path (suggested) | Notes |
+|------|------------------|-------|
+| Overview (light) | `docs/images/overview-light.png` | Executive stats + charts |
+| Overview (dark) | `docs/images/overview-dark.png` | Full dark-mode shell |
+| Call detail | `docs/images/call-detail.png` | Transcript + summary metadata |
+| Knowledge base | `docs/images/knowledge-base.png` | Searchable table + edit dialog |
+
+UI system documentation: [docs/ui.md](docs/ui.md).
 
 ## Security notes
 
