@@ -8,8 +8,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
+from app.integrations.retell_signature import verify_retell_signature
 from app.models import Appointment, Business, Call, Caller, WebhookEvent
 from app.schemas.call import RetellCallEndedPayload
+from app.services.audit import record_audit
 
 
 def verify_hmac_signature(raw_body: bytes, signature: str | None, secret: str) -> None:
@@ -25,6 +28,23 @@ def verify_hmac_signature(raw_body: bytes, signature: str | None, secret: str) -
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid webhook signature"
         )
+
+
+def verify_retell_webhook(
+    raw_body: bytes,
+    signature: str | None,
+    *,
+    settings: Settings | None = None,
+    api_key: str | None = None,
+    allow_bypass: bool = False,
+) -> None:
+    settings = settings or get_settings()
+    if settings.mock_external_services:
+        if allow_bypass or not settings.retell_webhook_secret:
+            return
+        verify_hmac_signature(raw_body, signature, settings.retell_webhook_secret)
+        return
+    verify_retell_signature(raw_body.decode("utf-8"), signature, api_key or settings.retell_api_key)
 
 
 def event_key(payload: dict, explicit_id: str | None = None) -> str:
@@ -140,3 +160,32 @@ def process_completed_call(
     if appointment:
         db.refresh(appointment)
     return call, appointment
+
+
+def sync_calcom_booking_status(db: Session, payload: dict) -> Appointment | None:
+    booking_uid = payload.get("uid") or payload.get("bookingUid") or payload.get("id")
+    if not booking_uid:
+        return None
+    appointment = db.scalar(select(Appointment).where(Appointment.cal_event_id == str(booking_uid)))
+    if appointment is None:
+        return None
+    status_value = payload.get("status") or payload.get("bookingStatus")
+    if status_value:
+        appointment.status = str(status_value)
+        db.commit()
+        db.refresh(appointment)
+    return appointment
+
+
+def reject_webhook_audit(db: Session, *, business_id: str | None, provider: str, detail: str) -> None:
+    if not business_id:
+        return
+    record_audit(
+        db,
+        business_id=business_id,
+        provider=provider,
+        action="webhook_rejected",
+        status="error",
+        detail=detail,
+    )
+    db.commit()

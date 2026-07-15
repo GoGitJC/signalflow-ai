@@ -1,6 +1,12 @@
 # Testing
 
-## Backend (pytest + ruff + mypy)
+## Backend (Docker — recommended)
+
+```bash
+docker compose run --rm backend-test sh -c "ruff check . && mypy app && pytest -q"
+```
+
+## Backend (local venv)
 
 ```bash
 cd backend
@@ -8,12 +14,21 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 ruff check .
-ruff format --check .
-mypy
+mypy app
 pytest
 ```
 
-Tests live in `backend/tests/` and cover health, business/KB, mock integrations, and Retell webhook flows (including idempotency and tenant isolation scenarios).
+## Test coverage
+
+| Suite | Focus |
+|-------|-------|
+| `test_retell_webhook.py` | Call-ended flow, idempotency, tenant scope |
+| `test_retell_integration.py` | Agent resolution, signatures, connection test, cross-tenant |
+| `test_calcom_integration.py` | Event type resolution, slots, booking, webhooks, duplicates |
+| `test_e2e_integration_flow.py` | Mocked call → availability → book → dashboard |
+| `test_mock_integrations.py` | Legacy mock Cal.com/Twilio routes |
+
+All provider HTTP calls are mocked — tests do not consume paid Retell or Cal.com usage.
 
 ## Frontend
 
@@ -33,12 +48,9 @@ curl -sf http://localhost:8000/health
 docker compose ps
 ```
 
-## CI
-
-`.github/workflows/ci.yml` runs formatting, lint, typing, backend tests, frontend typecheck/build, and Docker image builds on pull requests and pushes to `main`.
-
 ## Conventions
 
-- Prefer API-level tests with FastAPI `TestClient`.
-- Keep webhook fixtures deterministic.
-- Do not require external network for unit/integration tests — mocks are the default.
+- `INTEGRATION_MODE=mock` in `conftest.py`
+- Fernet test key and `OWNER_API_TOKEN` set for integration settings tests
+- Deterministic webhook fixtures with legacy HMAC in mock mode
+- No real credentials in fixtures or assertions

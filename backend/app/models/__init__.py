@@ -5,8 +5,11 @@ from app.models.entities import (
     Call,
     Caller,
     Integration,
+    IntegrationAuditEvent,
+    IntegrationProvider,
     KnowledgeBaseEntry,
     User,
+    UserRole,
     VoiceAgent,
     WebhookEvent,
 )
@@ -18,8 +21,11 @@ __all__ = [
     "Call",
     "Caller",
     "Integration",
+    "IntegrationAuditEvent",
+    "IntegrationProvider",
     "KnowledgeBaseEntry",
     "User",
+    "UserRole",
     "VoiceAgent",
     "WebhookEvent",
 ]

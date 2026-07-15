@@ -2,16 +2,57 @@
 
 ## Role
 
-Cal.com provides availability and booking. SignalFlow also accepts Cal.com webhooks for future sync.
+Cal.com API v2 provides availability and booking. SignalFlow stores booking UIDs as `cal_event_id` and syncs status from webhooks.
 
-## REST (mock)
+## Credentials
 
-| Method | Path | Behavior |
-|--------|------|----------|
-| `POST` | `/api/integrations/calcom/availability` | Up to 8 hourly slots between `start` and `end` |
-| `POST` | `/api/integrations/calcom/book` | Returns `mock-cal-{uuid}`, 30-minute window, `status: booked` |
+| Variable | Purpose |
+|----------|---------|
+| `CALCOM_API_KEY` | Bearer token for API v2 |
+| `CALCOM_API_BASE_URL` | Default `https://api.cal.com/v2` |
+| `CALCOM_API_VERSION` | Required `cal-api-version` header (default `2024-09-04`) |
+| `CALCOM_EVENT_TYPE_ID` | Resolve event type by ID |
+| `CALCOM_EVENT_TYPE_SLUG` + `CALCOM_USERNAME` | Resolve event type by slug |
+| `INTEGRATION_MODE` | `mock` (default) or `live` |
 
-Responses include `mocked: true` when mocks are enabled. Live mode returns **501**.
+Per-business credentials are encrypted in `integrations` (provider `calcom`).
+
+## Create a Cal.com API key
+
+1. Open [Cal.com settings → Developer](https://app.cal.com/settings/developer)
+2. Create an API key
+3. Store as `CALCOM_API_KEY` in `.env`
+
+## Find event type ID or slug
+
+- Event type ID: Cal.com event type settings URL or `GET /v2/event-types`
+- Slug + username: public booking link `https://cal.com/{username}/{slug}`
+
+## Management API (owner/admin)
+
+Headers: `X-Owner-Token`, `X-Business-Id`
+
+| Method | Path |
+|--------|------|
+| `GET` | `/api/integrations/calcom/status` |
+| `PUT` | `/api/integrations/calcom` |
+| `POST` | `/api/integrations/calcom/test` |
+
+## Scheduling API
+
+| Method | Path | Mode |
+|--------|------|------|
+| `POST` | `/api/integrations/calcom/availability` | mock + live |
+| `POST` | `/api/integrations/calcom/book` | mock + live |
+
+Live booking uses `POST /v2/bookings` with:
+
+- `eventTypeId` or `username` + `eventTypeSlug`
+- `start` (ISO UTC)
+- `attendee` (`name`, `email`, `timeZone`, optional `phoneNumber`)
+- `metadata.service`
+
+Bookings are transactional: local appointments are not confirmed unless Cal.com succeeds. Duplicate protection uses a local idempotency hash.
 
 ## Webhook
 
@@ -19,17 +60,44 @@ Responses include `mocked: true` when mocks are enabled. Live mode returns **501
 |--------|------|--------|
 | `POST` | `/api/webhooks/calcom` | `X-Cal-Signature` |
 
-Currently acknowledges and claims idempotency only — does not mutate appointments yet.
+When `SIGNALFLOW_CALCOM_WEBHOOK_SECRET` is set, HMAC-SHA256 of the raw body is required. Matching appointments update `status` by booking UID.
 
-Secret: `SIGNALFLOW_CALCOM_WEBHOOK_SECRET`.
+## Test availability without booking
 
-## Appointment persistence from voice
+```bash
+curl -X POST http://localhost:8000/api/integrations/calcom/availability \
+  -H "Content-Type: application/json" \
+  -d '{
+    "business_id": "<uuid>",
+    "start": "2026-08-01T00:00:00Z",
+    "end": "2026-08-02T00:00:00Z"
+  }'
+```
 
-Completed Retell calls may include an `appointment` object; that path creates rows in `appointments` with optional `cal_event_id`, independent of the Cal.com REST mock.
+In live mode this calls `GET /v2/slots` with `cal-api-version: 2024-09-04`.
+
+## API versions
+
+| Endpoint family | Suggested `cal-api-version` |
+|-----------------|----------------------------|
+| Slots | `2024-09-04` |
+| Bookings | `2024-08-13` |
+
+`CALCOM_API_VERSION` is sent on metadata requests; slots and bookings use the versions required by Cal.com v2 docs.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---------|-------|
+| 401 Unauthorized | API key and Bearer header |
+| 404 on v2 routes | Missing `cal-api-version` header |
+| Ambiguous event type | Set `CALCOM_EVENT_TYPE_ID` explicitly |
+| Booking conflict | Slot taken — pick another slot |
 
 ## Production checklist
 
-- [ ] Live availability/booking HTTP client
-- [ ] Per-tenant Cal.com credentials in `integrations`
-- [ ] Webhook handlers that update appointment status
-- [ ] Conflict / cancellation handling
+- [ ] Connection test passes
+- [ ] Event type resolved uniquely
+- [ ] Webhook secret configured
+- [ ] Availability tested for a future date range (no booking)
+- [ ] Real booking only after explicit approval

@@ -113,6 +113,7 @@ class VoiceAgent(Base):
     )
     retell_agent_id: Mapped[str] = mapped_column(String(200))
     name: Mapped[str] = mapped_column(String(200))
+    retell_agent_name: Mapped[str | None] = mapped_column(String(200))
     greeting: Mapped[str] = mapped_column(Text)
     system_prompt: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -200,6 +201,24 @@ class Integration(Base):
     provider: Mapped[IntegrationProvider] = mapped_column(integration_provider_enum)
     encrypted_credentials: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_test_status: Mapped[str | None] = mapped_column(String(40))
+    last_test_error: Mapped[str | None] = mapped_column(Text)
+
+
+class IntegrationAuditEvent(Base):
+    __tablename__ = "integration_audit_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(40), index=True)
+    action: Mapped[str] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(40))
+    detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class WebhookEvent(Base):

@@ -1,5 +1,11 @@
-import { useState } from "react";
-import { getBusinessId, setBusinessId } from "@/api/client";
+import { useEffect, useState } from "react";
+import {
+  api,
+  getBusinessId,
+  setBusinessId,
+  type CalComIntegrationStatus,
+  type RetellIntegrationStatus,
+} from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -8,9 +14,121 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/hooks/toast-context";
 
+type IntegrationCardProps = {
+  title: string;
+  description: string;
+  businessId: string;
+  connected: boolean;
+  lastTestAt?: string | null;
+  lastTestStatus?: string | null;
+  lastTestError?: string | null;
+  details: Array<{ label: string; value?: string | null }>;
+  onSave: (apiKey: string, confirmReplace: boolean) => Promise<void>;
+  onTest: () => Promise<void>;
+  extraFields?: React.ReactNode;
+};
+
+function IntegrationCard({
+  title,
+  description,
+  connected,
+  lastTestAt,
+  lastTestStatus,
+  lastTestError,
+  details,
+  onSave,
+  onTest,
+  extraFields,
+}: IntegrationCardProps) {
+  const [apiKey, setApiKey] = useState("");
+  const [confirmReplace, setConfirmReplace] = useState(false);
+  const [loading, setLoading] = useState<"save" | "test" | null>(null);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Connection</span>
+          <span className={connected ? "text-emerald-400" : "text-amber-400"}>
+            {connected ? "Connected" : "Not configured"}
+          </span>
+        </div>
+        {details.map((item) => (
+          <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">{item.label}</span>
+            <span className="truncate font-mono text-xs">{item.value || "—"}</span>
+          </div>
+        ))}
+        {lastTestAt && (
+          <p className="text-xs text-muted-foreground">
+            Last test: {new Date(lastTestAt).toLocaleString()} ({lastTestStatus})
+          </p>
+        )}
+        {lastTestError && <p className="text-xs text-red-400">{lastTestError}</p>}
+        {extraFields}
+        <Input
+          type="password"
+          placeholder="API key"
+          value={apiKey}
+          onChange={(event) => setApiKey(event.target.value)}
+        />
+        {connected && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={confirmReplace}
+              onChange={(event) => setConfirmReplace(event.target.checked)}
+            />
+            Replace existing credentials
+          </label>
+        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1"
+            disabled={!apiKey || loading !== null}
+            onClick={async () => {
+              setLoading("save");
+              try {
+                await onSave(apiKey, confirmReplace);
+                setApiKey("");
+                setConfirmReplace(false);
+              } finally {
+                setLoading(null);
+              }
+            }}
+          >
+            {loading === "save" ? "Saving…" : `Save ${title}`}
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={loading !== null}
+            onClick={async () => {
+              setLoading("test");
+              try {
+                await onTest();
+              } finally {
+                setLoading(null);
+              }
+            }}
+          >
+            {loading === "test" ? "Testing…" : "Test Connection"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsPage() {
   const { toast } = useToast();
   const [businessId, setLocalBusinessId] = useState(getBusinessId());
+  const [retellStatus, setRetellStatus] = useState<RetellIntegrationStatus | null>(null);
+  const [calcomStatus, setCalcomStatus] = useState<CalComIntegrationStatus | null>(null);
   const [profile, setProfile] = useState({
     name: "SignalFlow Demo Business",
     phone: "",
@@ -18,6 +136,12 @@ export function SettingsPage() {
     timezone: "America/Chicago",
     hours: "Mon–Fri 8:00–17:00",
   });
+
+  useEffect(() => {
+    if (!businessId) return;
+    api.retellStatus(businessId).then(setRetellStatus).catch(() => setRetellStatus(null));
+    api.calcomStatus(businessId).then(setCalcomStatus).catch(() => setCalcomStatus(null));
+  }, [businessId]);
 
   return (
     <div className="space-y-6">
@@ -99,74 +223,83 @@ export function SettingsPage() {
                   onChange={(event) => setProfile((current) => ({ ...current, hours: event.target.value }))}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    toast({
-                      title: "Profile drafted locally",
-                      description: "Authenticated business PATCH lands in the next product sprint.",
-                    })
-                  }
-                >
-                  Save profile draft
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="providers" className="grid gap-4 lg:grid-cols-3">
-          {[
-            ["Retell", "Voice agent webhooks and live call orchestration."],
-            ["Twilio", "SMS summaries and messaging delivery."],
-            ["Cal.com", "Availability lookup and appointment booking."],
-          ].map(([name, description]) => (
-            <Card key={name}>
-              <CardHeader>
-                <CardTitle>{name}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input placeholder="Credential / account reference" />
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() =>
-                    toast({
-                      title: `${name} credential form ready`,
-                      description: "Encrypted integration CRUD ships with authentication.",
-                    })
-                  }
-                >
-                  Save {name}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        <TabsContent value="providers" className="grid gap-4 lg:grid-cols-2">
+          <IntegrationCard
+            title="Retell AI"
+            description="Voice agent webhooks and live call orchestration."
+            businessId={businessId}
+            connected={Boolean(retellStatus?.connected)}
+            lastTestAt={retellStatus?.last_test_at}
+            lastTestStatus={retellStatus?.last_test_status}
+            lastTestError={retellStatus?.last_test_error}
+            details={[
+              { label: "Mode", value: retellStatus?.mode },
+              { label: "Agent name", value: retellStatus?.agent_name },
+              { label: "Agent ID", value: retellStatus?.agent_id_masked },
+              { label: "Webhook URL", value: retellStatus?.webhook_url },
+            ]}
+            onSave={async (apiKey, confirmReplace) => {
+              const status = await api.saveRetell(businessId, {
+                api_key: apiKey,
+                agent_name: "Universal_Demo",
+                confirm_replace: confirmReplace,
+              });
+              setRetellStatus(status);
+              toast({ title: "Retell credentials saved" });
+            }}
+            onTest={async () => {
+              const result = await api.testRetell(businessId);
+              setRetellStatus(await api.retellStatus(businessId));
+              toast({
+                title: result.ok ? "Retell connection OK" : "Retell test failed",
+                description: result.message ?? undefined,
+              });
+            }}
+          />
+          <IntegrationCard
+            title="Cal.com"
+            description="Availability lookup and appointment booking."
+            businessId={businessId}
+            connected={Boolean(calcomStatus?.connected)}
+            lastTestAt={calcomStatus?.last_test_at}
+            lastTestStatus={calcomStatus?.last_test_status}
+            lastTestError={calcomStatus?.last_test_error}
+            details={[
+              { label: "Mode", value: calcomStatus?.mode },
+              { label: "Event type", value: calcomStatus?.event_type_name },
+              { label: "Event type ID", value: calcomStatus?.event_type_id },
+              { label: "Slug", value: calcomStatus?.event_type_slug },
+              { label: "Username", value: calcomStatus?.username },
+            ]}
+            onSave={async (apiKey, confirmReplace) => {
+              const status = await api.saveCalcom(businessId, { api_key: apiKey, confirm_replace: confirmReplace });
+              setCalcomStatus(status);
+              toast({ title: "Cal.com credentials saved" });
+            }}
+            onTest={async () => {
+              const result = await api.testCalcom(businessId);
+              setCalcomStatus(await api.calcomStatus(businessId));
+              toast({
+                title: result.ok ? "Cal.com connection OK" : "Cal.com test failed",
+                description: result.message ?? undefined,
+              });
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="security" className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>API keys</CardTitle>
-              <CardDescription>Public API access is not enabled in the local MVP foundation.</CardDescription>
+              <CardTitle>Owner API token</CardTitle>
+              <CardDescription>
+                Integration settings use <code>X-Owner-Token</code> from <code>VITE_OWNER_API_TOKEN</code>. API keys are
+                never stored in the browser.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button variant="outline" onClick={() => toast({ title: "API keys require auth sprint" })}>
-                Generate key
-              </Button>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Users</CardTitle>
-              <CardDescription>Membership and roles arrive with JWT authentication.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Current operator context is implicit for this unauthenticated local phase. Tenant scoping still requires an
-              explicit business ID.
-            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

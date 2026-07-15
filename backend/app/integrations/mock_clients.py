@@ -13,13 +13,14 @@ class MockCalComClient:
             cursor += timedelta(hours=1)
         return slots
 
-    def book(self, request: BookingRequest) -> dict:
+    def book(self, request: BookingRequest, *, idempotency_key: str | None = None) -> dict:
         return {
             "cal_event_id": f"mock-cal-{uuid.uuid4()}",
             "start_time": request.start,
             "end_time": request.start + timedelta(minutes=30),
             "status": "booked",
         }
+
 
 
 class MockTwilioClient:

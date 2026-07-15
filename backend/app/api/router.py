@@ -7,6 +7,7 @@ from app.api.routes import (
     health,
     integrations,
     knowledge_base,
+    retell_tools,
     webhooks,
 )
 
@@ -17,4 +18,5 @@ api_router.include_router(knowledge_base.router)
 api_router.include_router(calls.router)
 api_router.include_router(appointments.router)
 api_router.include_router(integrations.router)
+api_router.include_router(retell_tools.router)
 api_router.include_router(webhooks.router)

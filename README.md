@@ -75,9 +75,13 @@ Copy `.env.example` → `.env`. Never commit `.env`.
 | `SIGNALFLOW_ENVIRONMENT` | `development` / `production` |
 | `SIGNALFLOW_DATABASE_URL` | SQLAlchemy URL (Compose overrides to the `db` service) |
 | `SIGNALFLOW_FRONTEND_ORIGIN` | CORS origin for the dashboard |
-| `SIGNALFLOW_MOCK_EXTERNAL_SERVICES` | `true` enables mock Cal.com / Twilio |
-| `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY` | Reserved for encrypted integration secrets |
-| `SIGNALFLOW_RETELL_WEBHOOK_SECRET` | Optional HMAC for Retell webhooks |
+| `INTEGRATION_MODE` | `mock` (default) or `live` for Retell/Cal.com adapters |
+| `APP_PUBLIC_API_URL` | Public API URL for webhook registration |
+| `OWNER_API_TOKEN` / `VITE_OWNER_API_TOKEN` | Integration settings admin token |
+| `RETELL_API_KEY`, `RETELL_AGENT_ID`, `RETELL_AGENT_NAME` | Retell live credentials |
+| `CALCOM_API_KEY`, `CALCOM_EVENT_TYPE_ID`, `CALCOM_EVENT_TYPE_SLUG`, `CALCOM_USERNAME` | Cal.com live credentials |
+| `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY` | Fernet key for encrypted integration secrets |
+| `SIGNALFLOW_RETELL_WEBHOOK_SECRET` | Mock legacy HMAC for Retell webhooks |
 | `SIGNALFLOW_CALCOM_WEBHOOK_SECRET` | Optional HMAC for Cal.com webhooks |
 | `SIGNALFLOW_TWILIO_ACCOUNT_SID` / `SIGNALFLOW_TWILIO_AUTH_TOKEN` | Reserved for live Twilio |
 | `VITE_API_URL` | Frontend API base (default `http://localhost:8000`) |
@@ -152,12 +156,15 @@ See [docs/testing.md](docs/testing.md).
 
 ## Mock providers
 
-With `SIGNALFLOW_MOCK_EXTERNAL_SERVICES=true` (default):
+With `INTEGRATION_MODE=mock` (default):
 
+- Retell and Cal.com connection tests return mocked success
 - `POST /api/integrations/calcom/availability` — synthetic hourly slots
-- `POST /api/integrations/calcom/book` — mock event IDs
-- `POST /api/integrations/twilio/send-summary` — queued mock SMS
+- `POST /api/integrations/calcom/book` — transactional mock bookings
+- `POST /api/retell/tools/check_availability` and `/book_appointment` — agent-scoped scheduling
 - Retell webhooks accept unsigned bodies when secrets are empty
+
+Set `INTEGRATION_MODE=live` with provider credentials for real API calls (see integration docs).
 
 Simulate a completed call:
 
@@ -196,7 +203,7 @@ See [docs/security.md](docs/security.md) and [SECURITY.md](SECURITY.md).
 ## Known limitations
 
 - No authentication / RBAC enforcement yet (models include `User` / `UserRole`).
-- Live Retell / Twilio / Cal.com HTTP clients are not enabled (`501` when mocks are off).
+- Live Twilio HTTP client is not implemented; Retell and Cal.com live adapters require `INTEGRATION_MODE=live` and credentials.
 - Frontend settings are read-only; no credential CRUD UI.
 - Pagination, audit logs, async jobs, and observability are planned later phases.
 

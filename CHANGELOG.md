@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Production Retell AI and Cal.com provider adapters with `INTEGRATION_MODE=mock|live`.
+- Integration settings API: Retell/Cal.com status, credential upsert, connection tests.
+- Retell tool endpoints: `check_availability`, `book_appointment` (agent → business mapping).
+- Unified Retell webhook route `/api/webhooks/retell` with official signature verification in live mode.
+- Cal.com v2 slots/booking client, transactional booking, duplicate protection, webhook status sync.
+- Encrypted per-business credentials, integration audit events, migration `0002_integrations`.
+- CLI: `python -m app.cli.resolve_retell_agent`.
+- Frontend Settings integration cards (masked IDs, test connection, password inputs).
+- Tests: Retell/Cal.com provider mocks, signatures, cross-tenant denial, E2E mocked flow.
+
+### Changed
+
+- `INTEGRATION_MODE` replaces mock-only 501 behavior; mock adapters preserved for tests.
+- Retell webhooks resolve `business_id` from `voice_agents.retell_agent_id` when using official payload format.
+- `.env.example` documents Retell, Cal.com, owner token, and public API URL variables.
+
+### Security
+
+- Live Retell webhooks require `X-Retell-Signature` verified with API key.
+- Integration admin routes require `X-Owner-Token`; API keys never returned to frontend.
+
+### Added (prior)
+
 - Premium dashboard redesign: design tokens, shadcn-style component library, dark mode, full sidebar IA, charts, skeletons, empty/error states.
 - `docs/ui.md` for design philosophy, palette, components, typography, responsive behavior, dark mode, and motion.
 - Compose `backend-test` service and Dockerfile `development` target with `[dev]` extras (`pytest`, `ruff`, `mypy`).
