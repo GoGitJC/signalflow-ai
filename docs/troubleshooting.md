@@ -81,3 +81,6 @@ cd frontend && npm ci && npx tsc --noEmit && npm run build
 ## Port already in use
 
 Stop other Postgres/API processes or change Compose host ports.
+## Live booking refused
+
+If booking returns 403 with live mode enabled, `ALLOW_LIVE_BOOKING` is false by design. Keep it false until an operator explicitly enables real bookings.

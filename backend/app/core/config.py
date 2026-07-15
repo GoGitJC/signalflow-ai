@@ -10,7 +10,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "postgresql+psycopg://signalflow:signalflow@db:5432/signalflow"
     frontend_origin: str = "http://localhost:5173"
-    app_public_api_url: str = Field(default="http://localhost:8000", validation_alias="APP_PUBLIC_API_URL")
+    app_public_api_url: str = Field(
+        default="http://localhost:8000", validation_alias="APP_PUBLIC_API_URL"
+    )
 
     # Legacy SIGNALFLOW_ names remain supported.
     credential_encryption_key: str = Field(default="", repr=False)
@@ -20,7 +22,9 @@ class Settings(BaseSettings):
     twilio_auth_token: str = Field(default="", repr=False)
     mock_external_services: bool = True
 
-    integration_mode: Literal["mock", "live"] = Field(default="mock", validation_alias="INTEGRATION_MODE")
+    integration_mode: Literal["mock", "live"] = Field(
+        default="mock", validation_alias="INTEGRATION_MODE"
+    )
 
     retell_api_key: str = Field(default="", repr=False, validation_alias="RETELL_API_KEY")
     retell_agent_id: str = Field(default="", validation_alias="RETELL_AGENT_ID")
@@ -38,6 +42,10 @@ class Settings(BaseSettings):
 
     provider_timeout_seconds: float = 15.0
     owner_api_token: str = Field(default="", repr=False, validation_alias="OWNER_API_TOKEN")
+    allow_live_booking: bool = Field(default=False, validation_alias="ALLOW_LIVE_BOOKING")
+    calcom_event_types_api_version: str = Field(
+        default="2024-06-14", validation_alias="CALCOM_EVENT_TYPES_API_VERSION"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -12,7 +12,9 @@ from app.services.audit import record_audit
 from app.services.credentials import decrypt_credentials, encrypt_credentials, mask_secret
 
 
-def _integration_row(db: Session, business_id: str, provider: IntegrationProvider) -> Integration | None:
+def _integration_row(
+    db: Session, business_id: str, provider: IntegrationProvider
+) -> Integration | None:
     return db.scalar(
         select(Integration).where(
             Integration.business_id == business_id,
@@ -21,7 +23,9 @@ def _integration_row(db: Session, business_id: str, provider: IntegrationProvide
     )
 
 
-def load_retell_credentials(db: Session, business_id: str, settings: Settings | None = None) -> dict[str, Any]:
+def load_retell_credentials(
+    db: Session, business_id: str, settings: Settings | None = None
+) -> dict[str, Any]:
     settings = settings or get_settings()
     row = _integration_row(db, business_id, IntegrationProvider.retell)
     if row:
@@ -42,7 +46,9 @@ def load_retell_credentials(db: Session, business_id: str, settings: Settings | 
     }
 
 
-def load_calcom_credentials(db: Session, business_id: str, settings: Settings | None = None) -> dict[str, Any]:
+def load_calcom_credentials(
+    db: Session, business_id: str, settings: Settings | None = None
+) -> dict[str, Any]:
     settings = settings or get_settings()
     row = _integration_row(db, business_id, IntegrationProvider.calcom)
     if row:
@@ -50,7 +56,8 @@ def load_calcom_credentials(db: Session, business_id: str, settings: Settings | 
         return {
             "api_key": creds.get("api_key", ""),
             "event_type_id": creds.get("event_type_id") or row.metadata_json.get("event_type_id"),
-            "event_type_slug": creds.get("event_type_slug") or row.metadata_json.get("event_type_slug"),
+            "event_type_slug": creds.get("event_type_slug")
+            or row.metadata_json.get("event_type_slug"),
             "username": creds.get("username") or row.metadata_json.get("username"),
         }
     return {
@@ -99,8 +106,10 @@ def retell_status_view(db: Session, business_id: str) -> dict[str, Any]:
             VoiceAgent.active.is_(True),
         )
     )
-    agent_id = (row.metadata_json.get("agent_id") if row else None) or creds.get("agent_id") or (
-        agent.retell_agent_id if agent else None
+    agent_id = (
+        (row.metadata_json.get("agent_id") if row else None)
+        or creds.get("agent_id")
+        or (agent.retell_agent_id if agent else None)
     )
     return {
         "connected": bool(creds.get("api_key")),
@@ -108,7 +117,10 @@ def retell_status_view(db: Session, business_id: str) -> dict[str, Any]:
         "agent_name": creds.get("agent_name"),
         "agent_id_masked": mask_secret(agent_id),
         "webhook_url": settings.retell_webhook_url,
-        "webhook_configured": bool((row.metadata_json.get("webhook_url") if row else None) or settings.retell_webhook_base_url),
+        "webhook_configured": bool(
+            (row.metadata_json.get("webhook_url") if row else None)
+            or settings.retell_webhook_base_url
+        ),
         "last_test_at": row.last_test_at if row else None,
         "last_test_status": row.last_test_status if row else None,
         "last_test_error": row.last_test_error if row else None,
@@ -140,10 +152,24 @@ def test_retell_connection(db: Session, business_id: str) -> dict[str, Any]:
         result = {
             "ok": True,
             "agent_id": creds.get("agent_id") or "mock-agent-id",
-            "agent_name": creds.get("agent_name"),
+            "agent_name": creds.get("agent_name") or settings.retell_agent_name,
             "webhook_url": settings.retell_webhook_url,
             "mocked": True,
         }
+        row = upsert_integration(
+            db,
+            business_id=business_id,
+            provider=IntegrationProvider.retell,
+            credentials={
+                "api_key": creds.get("api_key") or "mock-retell-key",
+                "agent_id": result["agent_id"],
+                "agent_name": result["agent_name"],
+            },
+            metadata={"agent_id": result["agent_id"], "agent_name": result["agent_name"]},
+        )
+        row.last_test_at = datetime.now(UTC)
+        row.last_test_status = "ok"
+        row.last_test_error = None
         record_audit(
             db,
             business_id=business_id,
@@ -152,6 +178,7 @@ def test_retell_connection(db: Session, business_id: str) -> dict[str, Any]:
             status="ok",
             detail="mock",
         )
+        db.commit()
         return result
 
     settings.require_live_retell_config()
@@ -163,6 +190,11 @@ def test_retell_connection(db: Session, business_id: str) -> dict[str, Any]:
             agent_name=creds.get("agent_name") or settings.retell_agent_name,
         )
     except ProviderError as exc:
+        existing = _integration_row(db, business_id, IntegrationProvider.retell)
+        if existing:
+            existing.last_test_at = datetime.now(UTC)
+            existing.last_test_status = "error"
+            existing.last_test_error = str(exc)
         record_audit(
             db,
             business_id=business_id,
@@ -171,13 +203,18 @@ def test_retell_connection(db: Session, business_id: str) -> dict[str, Any]:
             status="error",
             detail=str(exc),
         )
+        db.commit()
         raise
 
     row = upsert_integration(
         db,
         business_id=business_id,
         provider=IntegrationProvider.retell,
-        credentials={"api_key": creds["api_key"], "agent_id": result["agent_id"], "agent_name": result["agent_name"]},
+        credentials={
+            "api_key": creds["api_key"],
+            "agent_id": result["agent_id"],
+            "agent_name": result["agent_name"],
+        },
         metadata={
             "agent_id": result["agent_id"],
             "agent_name": result["agent_name"],
@@ -189,10 +226,7 @@ def test_retell_connection(db: Session, business_id: str) -> dict[str, Any]:
     row.last_test_error = None
 
     voice_agent = db.scalar(
-        select(VoiceAgent).where(
-            VoiceAgent.business_id == business_id,
-            VoiceAgent.retell_agent_id == result["agent_id"],
-        )
+        select(VoiceAgent).where(VoiceAgent.retell_agent_id == result["agent_id"])
     )
     if voice_agent is None:
         db.add(
@@ -205,6 +239,8 @@ def test_retell_connection(db: Session, business_id: str) -> dict[str, Any]:
                 system_prompt="You are a helpful receptionist.",
             )
         )
+    elif voice_agent.business_id != business_id:
+        raise ProviderError("Retell agent is already mapped to another business")
     else:
         voice_agent.retell_agent_name = result["agent_name"]
         voice_agent.name = result["agent_name"]
@@ -232,6 +268,26 @@ def test_calcom_connection(db: Session, business_id: str) -> dict[str, Any]:
             "username": creds.get("username"),
             "mocked": True,
         }
+        row = upsert_integration(
+            db,
+            business_id=business_id,
+            provider=IntegrationProvider.calcom,
+            credentials={
+                "api_key": creds.get("api_key") or "mock-calcom-key",
+                "event_type_id": result["event_type_id"],
+                "event_type_slug": result["slug"],
+                "username": result.get("username"),
+            },
+            metadata={
+                "event_type_id": result["event_type_id"],
+                "event_type_slug": result["slug"],
+                "event_type_name": result["title"],
+                "username": result.get("username"),
+            },
+        )
+        row.last_test_at = datetime.now(UTC)
+        row.last_test_status = "ok"
+        row.last_test_error = None
         record_audit(
             db,
             business_id=business_id,
@@ -240,6 +296,7 @@ def test_calcom_connection(db: Session, business_id: str) -> dict[str, Any]:
             status="ok",
             detail="mock",
         )
+        db.commit()
         return result
 
     settings.require_live_calcom_config()
@@ -254,6 +311,11 @@ def test_calcom_connection(db: Session, business_id: str) -> dict[str, Any]:
     try:
         result = client.test_connection()
     except ProviderError as exc:
+        existing = _integration_row(db, business_id, IntegrationProvider.calcom)
+        if existing:
+            existing.last_test_at = datetime.now(UTC)
+            existing.last_test_status = "error"
+            existing.last_test_error = str(exc)
         record_audit(
             db,
             business_id=business_id,
@@ -262,6 +324,7 @@ def test_calcom_connection(db: Session, business_id: str) -> dict[str, Any]:
             status="error",
             detail=str(exc),
         )
+        db.commit()
         raise
 
     row = upsert_integration(
@@ -293,6 +356,96 @@ def test_calcom_connection(db: Session, business_id: str) -> dict[str, Any]:
     )
     db.commit()
     return {**result, "mocked": False}
+
+
+def sync_live_integrations_for_business(db: Session, business_id: str) -> dict[str, Any]:
+    """Persist verified env identifiers and encrypted credentials for one business."""
+    settings = get_settings()
+    if not settings.credential_encryption_key:
+        raise ValueError("SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY is required to persist integrations")
+
+    retell_meta = {
+        "agent_id": settings.retell_agent_id,
+        "agent_name": settings.retell_agent_name,
+    }
+    cal_meta = {
+        "event_type_id": settings.calcom_event_type_id,
+        "event_type_slug": settings.calcom_event_type_slug,
+        "event_type_name": None,
+        "username": settings.calcom_username,
+    }
+
+    if settings.retell_agent_id:
+        existing = db.scalar(
+            select(VoiceAgent).where(VoiceAgent.retell_agent_id == settings.retell_agent_id)
+        )
+        if existing and existing.business_id != business_id:
+            raise ValueError("Retell agent is already mapped to another business")
+        if existing is None:
+            db.add(
+                VoiceAgent(
+                    business_id=business_id,
+                    retell_agent_id=settings.retell_agent_id,
+                    retell_agent_name=settings.retell_agent_name,
+                    name=settings.retell_agent_name,
+                    greeting="Hello, thanks for calling.",
+                    system_prompt="You are a helpful receptionist.",
+                )
+            )
+        else:
+            existing.retell_agent_name = settings.retell_agent_name
+            existing.name = settings.retell_agent_name
+
+    if settings.retell_api_key and settings.retell_agent_id:
+        upsert_integration(
+            db,
+            business_id=business_id,
+            provider=IntegrationProvider.retell,
+            credentials={
+                "api_key": settings.retell_api_key,
+                "agent_id": settings.retell_agent_id,
+                "agent_name": settings.retell_agent_name,
+            },
+            metadata=retell_meta,
+        )
+
+    if settings.calcom_api_key and (
+        settings.calcom_event_type_id
+        or (settings.calcom_event_type_slug and settings.calcom_username)
+    ):
+        upsert_integration(
+            db,
+            business_id=business_id,
+            provider=IntegrationProvider.calcom,
+            credentials={
+                "api_key": settings.calcom_api_key,
+                "event_type_id": settings.calcom_event_type_id,
+                "event_type_slug": settings.calcom_event_type_slug,
+                "username": settings.calcom_username,
+            },
+            metadata=cal_meta,
+        )
+
+    db.commit()
+    retell_result = test_retell_connection(db, business_id)
+    cal_result = test_calcom_connection(db, business_id)
+    return {
+        "business_id": business_id,
+        "retell": {
+            "agent_id": retell_result.get("agent_id"),
+            "agent_name": retell_result.get("agent_name"),
+            "ok": retell_result.get("ok", True),
+            "mocked": retell_result.get("mocked"),
+        },
+        "calcom": {
+            "event_type_id": cal_result.get("event_type_id"),
+            "slug": cal_result.get("slug"),
+            "title": cal_result.get("title"),
+            "username": cal_result.get("username"),
+            "ok": cal_result.get("ok", True),
+            "mocked": cal_result.get("mocked"),
+        },
+    }
 
 
 def resolve_business_for_retell_agent(db: Session, retell_agent_id: str) -> str:

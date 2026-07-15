@@ -101,3 +101,18 @@ In live mode this calls `GET /v2/slots` with `cal-api-version: 2024-09-04`.
 - [ ] Webhook secret configured
 - [ ] Availability tested for a future date range (no booking)
 - [ ] Real booking only after explicit approval
+
+## Live booking guard
+
+`ALLOW_LIVE_BOOKING=false` (default) blocks remote Cal.com booking calls even when `INTEGRATION_MODE=live`.
+Set `ALLOW_LIVE_BOOKING=true` only after explicit approval to create real bookings.
+
+Event type listing/get requires `CALCOM_EVENT_TYPES_API_VERSION=2024-06-14`.
+
+## Manual availability check
+
+```bash
+./scripts/verify_integrations.sh
+```
+
+Uses a ~14-day future window and never creates a booking.

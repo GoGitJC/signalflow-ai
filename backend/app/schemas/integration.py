@@ -25,6 +25,8 @@ class BookingRequest(BaseModel):
     phone: str | None = None
     service: str
     timezone: str | None = None
+    call_id: str | None = None
+    retell_call_id: str | None = None
 
 
 class BookingResponse(BaseModel):
@@ -92,31 +94,56 @@ class ConnectionTestResponse(BaseModel):
     message: str | None = None
 
 
+class VoiceFriendlySlot(BaseModel):
+    option_id: str = Field(description="Stable ID the agent must pass back when booking")
+    start: datetime
+    label: str = Field(description="Spoken-friendly local time label")
+    timezone: str
+
+
 class RetellToolAvailabilityRequest(BaseModel):
-    retell_agent_id: str
+    retell_agent_id: str = Field(min_length=1)
     start: datetime
     end: datetime
-    timezone: str | None = None
+    timezone: str | None = Field(default="America/Chicago")
+    max_options: int = Field(default=5, ge=1, le=10)
 
 
 class RetellToolAvailabilityResponse(BaseModel):
-    slots: list[datetime]
+    available: bool
+    timezone: str
+    options: list[VoiceFriendlySlot]
+    spoken_summary: str
+    message: str
 
 
 class RetellToolBookingRequest(BaseModel):
-    retell_agent_id: str
+    retell_agent_id: str = Field(min_length=1)
     start: datetime
-    name: str
-    email: str
-    phone: str | None = None
-    service: str
-    timezone: str | None = None
+    name: str = Field(min_length=1, max_length=200)
+    email: str = Field(min_length=3, max_length=320)
+    phone: str | None = Field(default=None, max_length=32)
+    service: str = Field(min_length=1, max_length=200)
+    timezone: str | None = Field(default="America/Chicago")
+    option_id: str | None = Field(
+        default=None, description="option_id returned from check_availability"
+    )
+    caller_confirmed: bool = Field(
+        description="Must be true after the caller explicitly confirms the selected slot"
+    )
+    retell_call_id: str | None = Field(
+        default=None, description="Optional Retell call ID to link the appointment"
+    )
 
 
 class RetellToolBookingResponse(BaseModel):
-    cal_event_id: str
-    start_time: datetime
-    end_time: datetime
+    booked: bool
+    cal_event_id: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
     status: str
-    appointment_id: str
-
+    appointment_id: str | None = None
+    spoken_summary: str
+    message: str
+    requires_confirmation: bool = False
+    duplicate: bool = False

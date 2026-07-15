@@ -36,12 +36,13 @@ class CalComClient:
         }
 
     def resolve_event_type(self) -> dict[str, Any]:
+        et_version = self.settings.calcom_event_types_api_version
         if self.event_type_id:
             payload = request_json(
                 self.settings,
                 method="GET",
                 url=f"{self.base_url}/event-types/{self.event_type_id}",
-                headers=self._headers(),
+                headers=self._headers(api_version=et_version),
                 retryable=True,
             )
             data = payload.get("data", payload)
@@ -49,11 +50,23 @@ class CalComClient:
                 if len(data) != 1:
                     raise ProviderNotFoundError("Cal.com event type ID did not resolve uniquely")
                 data = data[0]
+            if isinstance(data, dict) and "eventTypeGroups" in data:
+                flattened: list[dict[str, Any]] = []
+                for group in data.get("eventTypeGroups") or []:
+                    flattened.extend(group.get("eventTypes") or [])
+                data = next(
+                    (item for item in flattened if str(item.get("id")) == str(self.event_type_id)),
+                    flattened[0] if len(flattened) == 1 else None,
+                )
+            if not isinstance(data, dict):
+                raise ProviderNotFoundError("Cal.com event type ID did not resolve")
             return {
                 "event_type_id": str(data.get("id") or self.event_type_id),
                 "slug": data.get("slug"),
                 "title": data.get("title") or data.get("name"),
-                "username": data.get("owner", {}).get("username") if isinstance(data.get("owner"), dict) else self.username,
+                "username": data.get("owner", {}).get("username")
+                if isinstance(data.get("owner"), dict)
+                else self.username,
             }
 
         if not self.event_type_slug or not self.username:
@@ -64,13 +77,21 @@ class CalComClient:
             self.settings,
             method="GET",
             url=f"{self.base_url}/event-types",
-            headers=self._headers(),
+            headers=self._headers(api_version=et_version),
             params={"username": self.username},
             retryable=True,
         )
         items = payload.get("data", payload)
         if isinstance(items, dict):
-            items = items.get("event_types") or items.get("items") or []
+            if "eventTypeGroups" in items:
+                grouped: list[dict[str, Any]] = []
+                for group in items.get("eventTypeGroups") or []:
+                    grouped.extend(group.get("eventTypes") or [])
+                items = grouped
+            else:
+                items = (
+                    items.get("event_types") or items.get("eventTypes") or items.get("items") or []
+                )
         matches = [item for item in items if item.get("slug") == self.event_type_slug]
         if not matches:
             raise ProviderNotFoundError(
@@ -140,7 +161,9 @@ class CalComClient:
         }
         event_type_id = request.event_type_id or resolved["event_type_id"]
         if event_type_id:
-            body["eventTypeId"] = int(event_type_id) if str(event_type_id).isdigit() else event_type_id
+            body["eventTypeId"] = (
+                int(event_type_id) if str(event_type_id).isdigit() else event_type_id
+            )
         else:
             body["eventTypeSlug"] = resolved["slug"]
             body["username"] = resolved["username"]

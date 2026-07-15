@@ -15,23 +15,26 @@ def test_e2e_mocked_call_availability_booking_dashboard(client, business_with_ag
         },
     )
     assert availability.status_code == 200
-    slots = availability.json()["slots"]
-    assert len(slots) >= 1
+    options = availability.json()["options"]
+    assert len(options) >= 1
 
     booked = client.post(
         "/api/retell/tools/book_appointment",
         json={
             "retell_agent_id": "agent-universal-demo",
-            "start": slots[0],
+            "start": options[0]["start"],
+            "option_id": options[0]["option_id"],
             "name": "Maria",
             "email": "maria@example.com",
             "phone": "+12105550101",
             "service": "Emergency dental exam",
             "timezone": "America/Chicago",
+            "caller_confirmed": True,
         },
     )
     assert booked.status_code == 200
     booking = booked.json()
+    assert booking["booked"] is True
 
     call_payload = {
         "event_id": "evt-e2e-1",

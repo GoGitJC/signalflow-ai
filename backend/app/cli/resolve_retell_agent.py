@@ -21,7 +21,9 @@ def main() -> int:
     agent_name = args.agent_name or settings.retell_agent_name
     client = get_retell_client(settings=settings)
     try:
-        resolved = client.resolve_agent(agent_id=args.agent_id or settings.retell_agent_id or None, agent_name=agent_name)
+        resolved = client.resolve_agent(
+            agent_id=args.agent_id or settings.retell_agent_id or None, agent_name=agent_name
+        )
     except ProviderError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

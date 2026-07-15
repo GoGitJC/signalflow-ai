@@ -57,8 +57,8 @@ def test_retell_invalid_api_key_maps_to_auth_error():
 def test_retell_timeout_maps_to_timeout_error():
     client = RetellClient("test-key")
     with patch("app.integrations.http_utils.httpx.Client") as mock_client:
-        mock_client.return_value.__enter__.return_value.request.side_effect = httpx.TimeoutException(
-            "timeout"
+        mock_client.return_value.__enter__.return_value.request.side_effect = (
+            httpx.TimeoutException("timeout")
         )
         with pytest.raises(ProviderTimeoutError):
             client.list_agents()

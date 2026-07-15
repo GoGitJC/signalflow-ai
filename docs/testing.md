@@ -54,3 +54,9 @@ docker compose ps
 - Fernet test key and `OWNER_API_TOKEN` set for integration settings tests
 - Deterministic webhook fixtures with legacy HMAC in mock mode
 - No real credentials in fixtures or assertions
+## Integration verification
+
+```bash
+docker compose run --rm backend-test sh -c "ruff check . && ruff format --check . && mypy app && pytest -q"
+./scripts/verify_integrations.sh
+```

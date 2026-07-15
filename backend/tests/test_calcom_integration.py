@@ -47,7 +47,11 @@ def test_calcom_slots_retrieval():
     )
     payload = {"data": {"2026-07-16": ["2026-07-16T14:00:00Z"]}}
     with patch("app.integrations.calcom_client.request_json", return_value=payload):
-        with patch.object(client, "resolve_event_type", return_value={"event_type_id": "10", "slug": "s", "username": "u"}):
+        with patch.object(
+            client,
+            "resolve_event_type",
+            return_value={"event_type_id": "10", "slug": "s", "username": "u"},
+        ):
             slots = client.availability(request)
     assert len(slots) == 1
 
@@ -61,7 +65,11 @@ def test_calcom_no_available_slots():
         end=datetime(2026, 7, 17, tzinfo=UTC),
     )
     with patch("app.integrations.calcom_client.request_json", return_value={"data": {}}):
-        with patch.object(client, "resolve_event_type", return_value={"event_type_id": "10", "slug": "s", "username": "u"}):
+        with patch.object(
+            client,
+            "resolve_event_type",
+            return_value={"event_type_id": "10", "slug": "s", "username": "u"},
+        ):
             slots = client.availability(request)
     assert slots == []
 
@@ -79,7 +87,11 @@ def test_calcom_successful_booking():
     )
     payload = {"data": {"uid": "booking-uid-1", "status": "accepted", "lengthInMinutes": 30}}
     with patch("app.integrations.calcom_client.request_json", return_value=payload):
-        with patch.object(client, "resolve_event_type", return_value={"event_type_id": "10", "slug": "s", "username": "u"}):
+        with patch.object(
+            client,
+            "resolve_event_type",
+            return_value={"event_type_id": "10", "slug": "s", "username": "u"},
+        ):
             result = client.book(request, idempotency_key="idem-1")
     assert result["cal_event_id"] == "booking-uid-1"
 

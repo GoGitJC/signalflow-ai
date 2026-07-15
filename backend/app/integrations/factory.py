@@ -4,7 +4,9 @@ from app.integrations.mock_clients import MockCalComClient, MockTwilioClient
 from app.integrations.retell_client import RetellClient
 
 
-def get_retell_client(*, api_key: str | None = None, settings: Settings | None = None) -> RetellClient:
+def get_retell_client(
+    *, api_key: str | None = None, settings: Settings | None = None
+) -> RetellClient:
     settings = settings or get_settings()
     key = api_key or settings.retell_api_key
     if not key:

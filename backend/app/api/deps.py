@@ -24,9 +24,7 @@ def require_owner_token(
             detail="Owner authentication headers are required",
         )
     if x_owner_token != settings.owner_api_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid owner token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid owner token")
     business = db.get(Business, x_business_id)
     if business is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Business not found")

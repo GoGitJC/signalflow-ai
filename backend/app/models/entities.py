@@ -105,7 +105,10 @@ class User(Base):
 
 class VoiceAgent(Base):
     __tablename__ = "voice_agents"
-    __table_args__ = (UniqueConstraint("business_id", "retell_agent_id"),)
+    __table_args__ = (
+        UniqueConstraint("business_id", "retell_agent_id"),
+        UniqueConstraint("retell_agent_id", name="uq_voice_agents_retell_agent_id"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     business_id: Mapped[str] = mapped_column(

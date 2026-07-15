@@ -177,7 +177,9 @@ def sync_calcom_booking_status(db: Session, payload: dict) -> Appointment | None
     return appointment
 
 
-def reject_webhook_audit(db: Session, *, business_id: str | None, provider: str, detail: str) -> None:
+def reject_webhook_audit(
+    db: Session, *, business_id: str | None, provider: str, detail: str
+) -> None:
     if not business_id:
         return
     record_audit(

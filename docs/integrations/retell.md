@@ -120,3 +120,29 @@ ngrok http 8000
 ```bash
 BUSINESS_ID=<uuid> ./scripts/simulate_call.sh
 ```
+
+## Live-ready tool endpoints
+
+| Method | Path |
+|--------|------|
+| `POST` | `/api/retell/tools/check_availability` |
+| `POST` | `/api/retell/tools/book_appointment` |
+
+`check_availability` returns voice-friendly `options` with `option_id` + `spoken_summary`.
+`book_appointment` requires `caller_confirmed=true` and resolves business from `retell_agent_id` only.
+
+Do not configure these as live Retell custom functions until the public webhook/tool base URL is approved.
+
+## Persist mapping
+
+```bash
+python scripts/prepare_integration_keys.py   # local .env only
+docker compose up -d --force-recreate backend
+docker compose exec backend python -m app.cli.sync_live_integrations --business-id "$VITE_BUSINESS_ID"
+```
+
+## Manual verification (no real booking)
+
+```bash
+./scripts/verify_integrations.sh
+```

@@ -172,6 +172,16 @@ Simulate a completed call:
 BUSINESS_ID=<uuid> ./scripts/simulate_call.sh
 ```
 
+### Live-ready integration verification
+
+```bash
+python scripts/prepare_integration_keys.py
+docker compose exec backend python -m app.cli.sync_live_integrations --business-id "$VITE_BUSINESS_ID"
+./scripts/verify_integrations.sh
+```
+
+`ALLOW_LIVE_BOOKING` defaults to `false`. Do not enable it until an operator approves a real booking.
+
 Provider docs: [Retell](docs/integrations/retell.md) · [Twilio](docs/integrations/twilio.md) · [Cal.com](docs/integrations/calcom.md).
 
 ## Deployment overview

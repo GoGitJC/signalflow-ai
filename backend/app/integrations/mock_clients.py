@@ -22,7 +22,6 @@ class MockCalComClient:
         }
 
 
-
 class MockTwilioClient:
     def send_sms(self, to: str, message: str) -> dict:
         if not to or not message:

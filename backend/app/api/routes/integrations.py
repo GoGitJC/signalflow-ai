@@ -160,8 +160,12 @@ def book(payload: BookingRequest, db: Session = Depends(get_db)):
         payload = payload.model_copy(update={"event_type_id": creds.get("event_type_id")})
     appointment, result = book_appointment_transactional(db, payload)
     return BookingResponse(
-        **result,
+        cal_event_id=result["cal_event_id"],
+        start_time=result["start_time"],
+        end_time=result["end_time"],
+        status=result.get("status", "booked"),
         mocked=settings.mock_external_services,
+        duplicate=bool(result.get("duplicate")),
         appointment_id=appointment.id,
     )
 

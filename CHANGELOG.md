@@ -9,7 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
-- Production Retell AI and Cal.com provider adapters with `INTEGRATION_MODE=mock|live`.
+- Live-ready Retell ↔ Cal.com flow: voice-friendly tool schemas, booking confirmation gate, call linkage.
+- `ALLOW_LIVE_BOOKING` guard (default false) to prevent accidental paid Cal.com bookings.
+- `CALCOM_EVENT_TYPES_API_VERSION` (default `2024-06-14`) for event-type endpoints.
+- Migration `0003_voice_agent_unique` — one Retell agent maps to exactly one business.
+- CLI `python -m app.cli.sync_live_integrations` to persist verified IDs onto a business.
+- Scripts: `scripts/prepare_integration_keys.py`, `scripts/verify_integrations.sh`.
+- Expanded mocked tests in `test_live_flow.py` (mapping, slots, booking, webhooks, tenants).
+
+### Changed
+
+- Retell tool responses return spoken summaries and `option_id` values for agent booking.
+- Connection tests persist `last_test_*` fields for both mock and live modes.
 - Integration settings API: Retell/Cal.com status, credential upsert, connection tests.
 - Retell tool endpoints: `check_availability`, `book_appointment` (agent → business mapping).
 - Unified Retell webhook route `/api/webhooks/retell` with official signature verification in live mode.
