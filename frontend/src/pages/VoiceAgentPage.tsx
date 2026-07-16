@@ -50,7 +50,16 @@ export function VoiceAgentPage({ businessId }: { businessId: string }) {
   const save = async () => {
     const agent = agentsQuery.data?.[0];
     if (!agent) return toast({ title: "No voice agent", description: "Create an agent from your provider integration first.", variant: "danger" });
-    await api.updateVoiceAgent(agent.id, { name: draft.name, greeting: draft.greeting, system_prompt: draft.systemPrompt, active: draft.active, voice: draft.voice, temperature: draft.temperature, transfer_number: draft.transferNumber, transfer_rules: draft.transferRules }, businessId);
+    await api.updateVoiceAgent(agent.id, {
+      name: draft.name,
+      greeting: draft.greeting,
+      system_prompt: draft.systemPrompt,
+      active: draft.active,
+      voice: draft.voice,
+      temperature: draft.temperature,
+      transfer_number: draft.transferNumber,
+      transfer_rules: draft.transferRules,
+    });
     await agentsQuery.refetch();
     toast({ title: "Voice agent saved", description: "Changes are live for this workspace." });
   };

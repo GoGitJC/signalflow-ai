@@ -46,7 +46,7 @@ Sidebar, TopNav, PageHeader
 
 Data hooks: `useDashboardData`, `useBusinessQuery` (TanStack Query keys), `useToast`, `useTheme`.
 
-Product surface documented in [dashboard.md](dashboard.md).
+Product surface documented in [dashboard.md](dashboard.md). Authentication: [auth.md](auth.md).
 
 **Rule:** do not paste one-off Tailwind blocks for controls that already exist in the library.
 

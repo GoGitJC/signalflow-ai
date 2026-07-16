@@ -44,20 +44,25 @@ Base URL defaults to `http://localhost:8000`. There is no global `/api` router p
 | `POST` | `/api/appointments` | Create |
 | `PATCH` | `/api/appointments/{appointment_id}` | Update (`business_id` query required) |
 
-## Auth (Phase 2)
+## Auth (Phase 2+)
+
+Cookie sessions (preferred) — see [auth.md](auth.md).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/auth/register` | Create business + owner user; returns JWT pair |
-| `POST` | `/api/auth/login` | Email/password → JWT pair |
-| `POST` | `/api/auth/refresh` | Rotate refresh token → new JWT pair |
-| `GET` | `/api/auth/me` | Current user (Bearer access token) |
+| `POST` | `/api/auth/register` | Create business + owner; sets HttpOnly cookies |
+| `POST` | `/api/auth/login` | Email/password; optional `remember_me` |
+| `POST` | `/api/auth/refresh` | Rotate refresh cookie |
+| `POST` | `/api/auth/logout` | Revoke refresh + clear cookies |
+| `GET` | `/api/auth/me` | Current user |
+| `POST` | `/api/auth/forgot-password` | Start password reset |
+| `POST` | `/api/auth/reset-password` | Complete password reset |
+| `POST` | `/api/auth/verify-email` | Placeholder email verification |
+| `GET` | `/api/auth/users` | List workspace users (admin) |
+| `GET/POST` | `/api/auth/invitations` | List/create invites (admin) |
+| `POST` | `/api/auth/invitations/accept` | Accept invite → session |
 
-Integration admin routes accept `Authorization: Bearer <access_token>` (owner/admin). Legacy `X-Owner-Token` + `X-Business-Id` remain supported during migration.
-
-Tenant dashboard routes (calls, appointments, knowledge base, business get/patch) require the same auth via any membership role (`require_business_member`). `POST /api/businesses` requires bootstrap `X-Owner-Token` (prefer `/api/auth/register` for new tenants).
-
-Auth actions write to `auth_audit_events` (register/login/refresh).
+Legacy `X-Owner-Token` remains for bootstrap/CLI only. Dashboard uses cookies exclusively.
 
 ## CRM & product APIs (Phase 3)
 

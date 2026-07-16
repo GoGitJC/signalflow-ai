@@ -1,6 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, getBusinessId } from "@/api/client";
+import { api } from "@/api/client";
+import { useAuth } from "@/auth/AuthProvider";
 import { businessKeys, useBusinessQuery } from "@/hooks/useBusinessQuery";
 import type { Appointment, Call, Caller, KnowledgeEntry, LoadState } from "@/types";
 
@@ -17,24 +18,42 @@ export type DashboardData = {
 };
 
 export function useDashboardData(): DashboardData {
-  const businessId = useMemo(() => getBusinessId(), []);
+  const { businessId, status: authStatus } = useAuth();
   const client = useQueryClient();
-  const callsQuery = useBusinessQuery(businessKeys.calls(businessId), () => api.calls(businessId), businessId);
-  const appointmentsQuery = useBusinessQuery(businessKeys.appointments(businessId), () => api.appointments(businessId), businessId);
-  const knowledgeQuery = useBusinessQuery(businessKeys.knowledge(businessId), () => api.knowledge(businessId), businessId);
-  const callersQuery = useBusinessQuery(businessKeys.callers(businessId), () => api.callers(businessId), businessId);
+  const enabled = Boolean(businessId) && authStatus === "authenticated";
+  const callsQuery = useBusinessQuery(
+    businessKeys.calls(businessId),
+    () => api.calls(businessId),
+    enabled ? businessId : "",
+  );
+  const appointmentsQuery = useBusinessQuery(
+    businessKeys.appointments(businessId),
+    () => api.appointments(businessId),
+    enabled ? businessId : "",
+  );
+  const knowledgeQuery = useBusinessQuery(
+    businessKeys.knowledge(businessId),
+    () => api.knowledge(businessId),
+    enabled ? businessId : "",
+  );
+  const callersQuery = useBusinessQuery(
+    businessKeys.callers(businessId),
+    () => api.callers(businessId),
+    enabled ? businessId : "",
+  );
   const healthQuery = useBusinessQuery(businessKeys.health, api.health, "health");
   const queries = [callsQuery, appointmentsQuery, knowledgeQuery, callersQuery];
-  const status: LoadState = !businessId || queries.some((query) => query.isError)
-    ? "error"
-    : queries.some((query) => query.isLoading)
+  const status: LoadState =
+    authStatus === "loading" || !enabled
       ? "loading"
-      : "success";
-  const error = !businessId
-    ? "Set VITE_BUSINESS_ID or localStorage key signalflow_business_id to load live data."
-    : queries.find((query) => query.error)?.error instanceof Error
-      ? (queries.find((query) => query.error)?.error as Error).message
-      : "";
+      : queries.some((query) => query.isError)
+        ? "error"
+        : queries.some((query) => query.isLoading)
+          ? "loading"
+          : "success";
+  const error = queries.find((query) => query.error)?.error instanceof Error
+    ? (queries.find((query) => query.error)?.error as Error).message
+    : "";
   const reload = useCallback(
     () => client.invalidateQueries({ queryKey: businessKeys.root(businessId) }).then(() => undefined),
     [businessId, client],

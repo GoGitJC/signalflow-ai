@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="", repr=False, validation_alias="JWT_SECRET")
     jwt_access_ttl_minutes: int = Field(default=30, validation_alias="JWT_ACCESS_TTL_MINUTES")
     jwt_refresh_ttl_days: int = Field(default=14, validation_alias="JWT_REFRESH_TTL_DAYS")
+    jwt_refresh_remember_days: int = Field(default=30, validation_alias="JWT_REFRESH_REMEMBER_DAYS")
+    auth_cookie_secure: bool = Field(default=False, validation_alias="AUTH_COOKIE_SECURE")
+    auth_cookie_samesite: Literal["lax", "strict", "none"] = Field(
+        default="lax", validation_alias="AUTH_COOKIE_SAMESITE"
+    )
+    auth_access_cookie_name: str = "sf_access"
+    auth_refresh_cookie_name: str = "sf_refresh"
 
     model_config = SettingsConfigDict(
         env_file=".env",

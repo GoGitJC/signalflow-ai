@@ -4,8 +4,11 @@ import {
   getBusinessId,
   setBusinessId,
   type CalComIntegrationStatus,
+  type Invitation,
   type RetellIntegrationStatus,
+  type SessionUser,
 } from "@/api/client";
+import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
@@ -300,18 +303,147 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
         <TabsContent value="security" className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Owner API token</CardTitle>
+              <CardTitle>Session security</CardTitle>
               <CardDescription>
-                Integration settings use Bearer JWT (preferred) or <code>X-Owner-Token</code> from{" "}
-                <code>VITE_OWNER_API_TOKEN</code>. Dashboard API calls send the same auth headers. API keys are
-                never stored in the browser.
+                Access and refresh tokens are stored in HttpOnly cookies. The browser never persists JWTs in
+                localStorage. Sessions refresh automatically and revoke on sign-out or password reset.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Permissions</CardTitle>
+              <CardDescription>
+                Roles: <strong>owner</strong> (full access), <strong>admin</strong> (users, integrations, settings),{" "}
+                <strong>member</strong> (read CRM/calls). Invite teammates from the Users tab.
               </CardDescription>
             </CardHeader>
           </Card>
         </TabsContent>
-        <TabsContent value="users"><Card><CardHeader><CardTitle>Users</CardTitle><CardDescription>Role-based workspace members are coming soon. Admins can review authorization activity in the audit log.</CardDescription></CardHeader></Card></TabsContent>
+        <TabsContent value="users">
+          <UsersInvitesPanel />
+        </TabsContent>
         <TabsContent value="audit"><Card><CardHeader><CardTitle>Audit log</CardTitle><CardDescription>Recent security and integration activity.</CardDescription></CardHeader><CardContent className="space-y-3">{auditEvents.length ? auditEvents.map((event) => <div key={event.id} className="flex justify-between gap-4 border-b border-border pb-3 text-sm"><div><p className="font-medium">{event.action}</p><p className="text-muted-foreground">{event.detail || event.provider || event.source}</p></div><div className="text-right text-muted-foreground">{event.status}<br />{new Date(event.created_at).toLocaleString()}</div></div>) : <p className="text-sm text-muted-foreground">No audit events available.</p>}</CardContent></Card></TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function UsersInvitesPanel() {
+  const { toast } = useToast();
+  const { can } = useAuth();
+  const [users, setUsers] = useState<SessionUser[]>([]);
+  const [invites, setInvites] = useState<Invitation[]>([]);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("member");
+  const [inviteLink, setInviteLink] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const reload = async () => {
+    const [nextUsers, nextInvites] = await Promise.all([api.listUsers(), api.listInvitations()]);
+    setUsers(nextUsers);
+    setInvites(nextInvites);
+  };
+
+  useEffect(() => {
+    if (!can("users:read") && !can("*")) return;
+    void reload().catch(() => {
+      setUsers([]);
+      setInvites([]);
+    });
+  }, [can]);
+
+  if (!can("users:read") && !can("*")) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Users</CardTitle>
+          <CardDescription>You need admin access to manage users and invitations.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Workspace users</CardTitle>
+          <CardDescription>People who can access this business.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {users.map((user) => (
+            <div key={user.id} className="flex items-center justify-between gap-3 border-b border-border pb-3 text-sm">
+              <div>
+                <p className="font-medium">{user.name}</p>
+                <p className="text-muted-foreground">{user.email}</p>
+              </div>
+              <span className="capitalize text-muted-foreground">{user.role}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Invitations</CardTitle>
+          <CardDescription>Invite admins or members by email.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-2">
+            <Label htmlFor="invite-email">Email</Label>
+            <Input id="invite-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="invite-role">Role</Label>
+            <select
+              id="invite-role"
+              className="h-10 rounded-xl border border-input bg-card px-3 text-sm"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <Button
+            disabled={loading || !email}
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const invite = await api.createInvitation({ email, role });
+                setInviteLink(
+                  invite.invite_token
+                    ? `${window.location.origin}/accept-invite?token=${encodeURIComponent(invite.invite_token)}`
+                    : "",
+                );
+                setEmail("");
+                await reload();
+                toast({ title: "Invitation created" });
+              } catch (err) {
+                toast({
+                  title: "Invite failed",
+                  description: err instanceof Error ? err.message : "Unable to invite",
+                  variant: "danger",
+                });
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            {loading ? "Sending…" : "Create invite"}
+          </Button>
+          {inviteLink ? <p className="break-all text-xs text-muted-foreground">Invite link: {inviteLink}</p> : null}
+          {invites.map((invite) => (
+            <div key={invite.id} className="flex justify-between gap-3 border-b border-border pb-3 text-sm">
+              <div>
+                <p className="font-medium">{invite.email}</p>
+                <p className="text-muted-foreground capitalize">{invite.role}</p>
+              </div>
+              <span className="text-muted-foreground">{invite.accepted_at ? "Accepted" : "Pending"}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

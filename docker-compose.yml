@@ -63,7 +63,6 @@ services:
     environment:
       VITE_API_URL: http://localhost:8000
       VITE_BUSINESS_ID: ${VITE_BUSINESS_ID:-}
-      VITE_OWNER_API_TOKEN: ${VITE_OWNER_API_TOKEN:-}
     volumes:
       - ./frontend:/app
       - /app/node_modules

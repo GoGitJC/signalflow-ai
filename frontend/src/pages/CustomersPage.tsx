@@ -86,7 +86,13 @@ export function CustomersPage({ businessId, callers, calls, appointments, loadin
 function CustomerDetail({ caller, calls, appointments, businessId, onClose }: { caller: Caller; calls: Call[]; appointments: Appointment[]; businessId: string; onClose: () => void }) {
   const [notes, setNotes] = useState(caller.notes ?? "");
   const [tags, setTags] = useState(caller.tags.join(", "));
-  const save = async () => { await api.updateCaller(caller.id, { notes, tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean) }, businessId); onClose(); };
+  const save = async () => {
+    await api.updateCaller(caller.id, {
+      notes,
+      tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    });
+    onClose();
+  };
   return <Card className="border-primary/30"><CardContent className="space-y-4 p-5">
     <div className="flex justify-between"><div><h2 className="font-semibold">{caller.name || caller.phone}</h2><p className="text-sm text-muted-foreground">{caller.phone}</p></div><button className="text-sm text-muted-foreground" onClick={onClose}>Close</button></div>
     <label className="grid gap-1 text-sm">Notes<textarea className="min-h-24 rounded-xl border border-input bg-card p-3" value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
