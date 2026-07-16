@@ -82,6 +82,28 @@ async function request<T>(path: string, options?: RequestOptions): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+export type ReadinessCheck = {
+  id: string;
+  label: string;
+  status: string;
+  detail: string;
+};
+
+export type ReadinessSnapshot = {
+  score: number;
+  checks: ReadinessCheck[];
+  environment: string;
+  integration_mode: string;
+  allow_live_booking: boolean;
+  retell_connected: boolean;
+  calcom_connected: boolean;
+  twilio_configured: boolean;
+  knowledge_count: number;
+  callers_count: number;
+  calls_count: number;
+  appointments_count: number;
+};
+
 export type RetellIntegrationStatus = {
   connected: boolean;
   mode: string;
@@ -241,8 +263,36 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
-  auditEvents: (businessId: string) =>
-    request<AuditEvent[]>(`/api/businesses/${businessId}/audit-events`),
+  auditEvents: (businessId: string, params?: { q?: string; source?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.source) query.set("source", params.source);
+    if (params?.limit) query.set("limit", String(params.limit));
+    const suffix = query.toString() ? `?${query}` : "";
+    return request<AuditEvent[]>(`/api/businesses/${businessId}/audit-events${suffix}`);
+  },
+  readiness: (businessId: string) =>
+    request<ReadinessSnapshot>(`/api/businesses/${businessId}/readiness`),
+  exportCsv: async (businessId: string, kind: "customers" | "appointments" | "calls") => {
+    const response = await fetch(`${API}/api/businesses/${businessId}/exports/${kind}.csv`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new Error(
+        (typeof body?.error?.message === "string" && body.error.message) ||
+          (typeof body.detail === "string" && body.detail) ||
+          response.statusText,
+      );
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${kind}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  },
   retellStatus: (businessId: string) =>
     request<RetellIntegrationStatus>("/api/integrations/retell/status"),
   saveRetell: (

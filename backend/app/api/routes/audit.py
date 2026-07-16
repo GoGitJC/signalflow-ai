@@ -14,16 +14,19 @@ router = APIRouter(tags=["audit"])
 def list_audit_events(
     business_id: str,
     limit: int = Query(default=50, ge=1, le=200),
+    q: str | None = Query(default=None, description="Search action, status, detail, provider"),
+    source: str | None = Query(default=None, description="auth | integration"),
     db: Session = Depends(get_db),
     tenant_id: str = Depends(require_business_admin),
 ):
     assert_tenant_access(tenant_id, business_id)
+    fetch_limit = min(max(limit * 4, limit), 500)
     integration = list(
         db.scalars(
             select(IntegrationAuditEvent)
             .where(IntegrationAuditEvent.business_id == business_id)
             .order_by(desc(IntegrationAuditEvent.created_at))
-            .limit(limit)
+            .limit(fetch_limit)
         )
     )
     auth = list(
@@ -31,7 +34,7 @@ def list_audit_events(
             select(AuthAuditEvent)
             .where(AuthAuditEvent.business_id == business_id)
             .order_by(desc(AuthAuditEvent.created_at))
-            .limit(limit)
+            .limit(fetch_limit)
         )
     )
     events: list[AuditEventRead] = [
@@ -60,5 +63,23 @@ def list_audit_events(
         )
         for item in auth
     )
+    if source in {"auth", "integration"}:
+        events = [event for event in events if event.source == source]
+    if q:
+        needle = q.strip().lower()
+        events = [
+            event
+            for event in events
+            if needle
+            in " ".join(
+                [
+                    event.action or "",
+                    event.status or "",
+                    event.detail or "",
+                    event.provider or "",
+                    event.source or "",
+                ]
+            ).lower()
+        ]
     events.sort(key=lambda item: item.created_at, reverse=True)
     return events[:limit]

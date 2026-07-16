@@ -116,6 +116,7 @@ export type PageId =
   | "customers"
   | "analytics"
   | "settings"
+  | "readiness"
   | "help";
 
 export type LoadState = "idle" | "loading" | "success" | "error";

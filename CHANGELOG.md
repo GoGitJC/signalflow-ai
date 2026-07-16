@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Closed-beta launch pack: HVAC demo tenant (`Summit HVAC Pros`), onboarding welcome + test-call checklist, Final Acceptance page (`/readiness`), CSV exports, searchable audit log.
+- Marketing polish: brand logo, favicon, loading screen, 404 page, empty-state illustrations, Help deep links.
+- Release notes: `docs/RELEASE_NOTES_v1.0_BETA.md`.
 - Phase 5 production readiness: structured JSON logging + request IDs, unified API error schema, rate limits on auth/webhooks, `/health` `/live` `/ready` `/metrics`, production config fail-fast, demo seed CLI, first-run onboarding wizard.
 - Frontend production Docker image (nginx + CSP) alongside Vite development target.
 - Ops docs: `docs/operations.md`, `docs/monitoring.md`, `docs/onboarding.md`, `docs/demo-data.md`; expanded deployment (Render/Railway/DO/AWS).

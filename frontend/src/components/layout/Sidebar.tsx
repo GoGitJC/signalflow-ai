@@ -3,6 +3,7 @@ import {
   Bot,
   CalendarDays,
   CircleHelp,
+  ClipboardCheck,
   LayoutDashboard,
   LineChart,
   PhoneCall,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import type { PageId } from "@/types";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const items: Array<{ id: PageId; label: string; icon: typeof LayoutDashboard }> = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
@@ -21,6 +23,7 @@ const items: Array<{ id: PageId; label: string; icon: typeof LayoutDashboard }> 
   { id: "voice-agent", label: "Voice Agent", icon: Bot },
   { id: "customers", label: "Customers", icon: Users },
   { id: "analytics", label: "Analytics", icon: LineChart },
+  { id: "readiness", label: "Acceptance", icon: ClipboardCheck },
   { id: "settings", label: "Settings", icon: Settings },
   { id: "help", label: "Help", icon: CircleHelp },
 ];
@@ -51,11 +54,11 @@ export function Sidebar({
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between px-6 py-5">
-          <div>
-            <div className="text-sm font-semibold tracking-tight text-white">SignalFlow AI</div>
-            <div className="mt-1 text-xs text-sidebar-muted">Receptionist OS</div>
-          </div>
+        <div className="flex items-center justify-between px-5 py-5">
+          <BrandLogo
+            className="text-white"
+            markClassName="h-8 w-8"
+          />
           <button type="button" className="rounded-lg p-2 text-sidebar-muted lg:hidden" onClick={onClose}>
             <X className="h-4 w-4" />
           </button>

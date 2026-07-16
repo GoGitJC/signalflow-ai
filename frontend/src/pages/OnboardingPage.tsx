@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/api/client";
 import { useAuth } from "@/auth/AuthProvider";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +11,21 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/toast-context";
 
 const steps = [
+  "Welcome",
   "Connect Retell",
   "Connect Cal.com",
   "Connect Twilio",
   "Add knowledge",
-  "Test voice agent",
+  "Test call checklist",
 ] as const;
+
+const testChecklist = [
+  "Voice agent greeting and prompt look correct",
+  "Public webhook URL registered with Retell",
+  "Place a no-booking test call (ALLOW_LIVE_BOOKING=false)",
+  "Call appears on the Calls page with transcript/summary",
+  "Optional: simulate webhook via Help in mock mode",
+];
 
 export function OnboardingPage() {
   const { businessId } = useAuth();
@@ -25,8 +35,9 @@ export function OnboardingPage() {
   const [calcomKey, setCalcomKey] = useState("");
   const [twilioSid, setTwilioSid] = useState("");
   const [twilioToken, setTwilioToken] = useState("");
-  const [question, setQuestion] = useState("What are your business hours?");
-  const [answer, setAnswer] = useState("Monday–Friday, 8am–5pm.");
+  const [question, setQuestion] = useState("What are your service hours?");
+  const [answer, setAnswer] = useState("Monday–Friday, 7am–6pm. Emergency dispatch after hours.");
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
   const [busy, setBusy] = useState(false);
   const title = useMemo(() => steps[step], [step]);
 
@@ -37,7 +48,7 @@ export function OnboardingPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="First-run setup"
-        description="Connect providers, add one knowledge entry, then verify your receptionist path."
+        description="Welcome to SignalFlow AI closed beta — connect providers, add knowledge, then verify a test call."
       />
       <div className="flex flex-wrap gap-2">
         {steps.map((label, index) => (
@@ -61,10 +72,32 @@ export function OnboardingPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {step === 0 ? (
+            <div className="space-y-4">
+              <BrandLogo />
+              <p className="text-sm text-muted-foreground">
+                SignalFlow answers inbound calls, books appointments, and gives your team a CRM dashboard.
+                This wizard takes about five minutes. Keep live booking off until Final Acceptance.
+              </p>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                <li>Retell for the voice agent</li>
+                <li>Cal.com for scheduling</li>
+                <li>Twilio for SMS (placeholder until acceptance)</li>
+                <li>One knowledge-base FAQ to start</li>
+              </ul>
+              <Button onClick={next}>Get started</Button>
+            </div>
+          ) : null}
+
+          {step === 1 ? (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="retell-key">Retell API key</Label>
-                <Input id="retell-key" type="password" value={retellKey} onChange={(e) => setRetellKey(e.target.value)} />
+                <Input
+                  id="retell-key"
+                  type="password"
+                  value={retellKey}
+                  onChange={(e) => setRetellKey(e.target.value)}
+                />
               </div>
               <Button
                 disabled={!retellKey || busy}
@@ -76,7 +109,11 @@ export function OnboardingPage() {
                     toast({ title: "Retell connected" });
                     next();
                   } catch (err) {
-                    toast({ title: "Retell setup failed", description: err instanceof Error ? err.message : "Error", variant: "danger" });
+                    toast({
+                      title: "Retell setup failed",
+                      description: err instanceof Error ? err.message : "Error",
+                      variant: "danger",
+                    });
                   } finally {
                     setBusy(false);
                   }
@@ -87,11 +124,16 @@ export function OnboardingPage() {
             </>
           ) : null}
 
-          {step === 1 ? (
+          {step === 2 ? (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="cal-key">Cal.com API key</Label>
-                <Input id="cal-key" type="password" value={calcomKey} onChange={(e) => setCalcomKey(e.target.value)} />
+                <Input
+                  id="cal-key"
+                  type="password"
+                  value={calcomKey}
+                  onChange={(e) => setCalcomKey(e.target.value)}
+                />
               </div>
               <Button
                 disabled={!calcomKey || busy}
@@ -103,7 +145,11 @@ export function OnboardingPage() {
                     toast({ title: "Cal.com connected" });
                     next();
                   } catch (err) {
-                    toast({ title: "Cal.com setup failed", description: err instanceof Error ? err.message : "Error", variant: "danger" });
+                    toast({
+                      title: "Cal.com setup failed",
+                      description: err instanceof Error ? err.message : "Error",
+                      variant: "danger",
+                    });
                   } finally {
                     setBusy(false);
                   }
@@ -114,19 +160,29 @@ export function OnboardingPage() {
             </>
           ) : null}
 
-          {step === 2 ? (
+          {step === 3 ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Twilio live SMS is gated behind production acceptance. Store Account SID / Auth Token in platform secrets
-                for now; confirmation SMS is validated on the Final Production Acceptance Checklist.
+                Twilio live SMS is gated behind Final Acceptance. Store Account SID / Auth Token notes here;
+                production secrets belong in the host secret store — never commit them.
               </p>
               <div className="grid gap-2">
                 <Label htmlFor="twilio-sid">Twilio Account SID (optional note)</Label>
-                <Input id="twilio-sid" value={twilioSid} onChange={(e) => setTwilioSid(e.target.value)} placeholder="ACxxxxx" />
+                <Input
+                  id="twilio-sid"
+                  value={twilioSid}
+                  onChange={(e) => setTwilioSid(e.target.value)}
+                  placeholder="ACxxxxx"
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="twilio-token">Twilio Auth Token (do not commit)</Label>
-                <Input id="twilio-token" type="password" value={twilioToken} onChange={(e) => setTwilioToken(e.target.value)} />
+                <Input
+                  id="twilio-token"
+                  type="password"
+                  value={twilioToken}
+                  onChange={(e) => setTwilioToken(e.target.value)}
+                />
               </div>
               <Button
                 onClick={() => {
@@ -143,7 +199,7 @@ export function OnboardingPage() {
             </>
           ) : null}
 
-          {step === 3 ? (
+          {step === 4 ? (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="kb-q">Knowledge question</Label>
@@ -167,7 +223,11 @@ export function OnboardingPage() {
                     toast({ title: "Knowledge entry created" });
                     next();
                   } catch (err) {
-                    toast({ title: "KB save failed", description: err instanceof Error ? err.message : "Error", variant: "danger" });
+                    toast({
+                      title: "KB save failed",
+                      description: err instanceof Error ? err.message : "Error",
+                      variant: "danger",
+                    });
                   } finally {
                     setBusy(false);
                   }
@@ -178,17 +238,36 @@ export function OnboardingPage() {
             </>
           ) : null}
 
-          {step === 4 ? (
+          {step === 5 ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Open Voice Agent to review greeting and prompt, then place a no-booking test call with{" "}
-                <code>ALLOW_LIVE_BOOKING=false</code>. Use Help for webhook simulation in mock mode.
+                Complete this checklist before inviting staff or enabling live booking.
               </p>
+              <ul className="space-y-2">
+                {testChecklist.map((item, index) => (
+                  <li key={item}>
+                    <label className="flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={Boolean(checked[index])}
+                        onChange={(e) =>
+                          setChecked((current) => ({ ...current, [index]: e.target.checked }))
+                        }
+                      />
+                      <span>{item}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
               <div className="flex flex-wrap gap-2">
                 <Button asChild>
                   <Link to="/voice-agent">Open Voice Agent</Link>
                 </Button>
                 <Button asChild variant="outline">
+                  <Link to="/readiness">Final Acceptance</Link>
+                </Button>
+                <Button asChild variant="secondary">
                   <Link to="/">Go to dashboard</Link>
                 </Button>
               </div>
@@ -199,7 +278,7 @@ export function OnboardingPage() {
             <Button variant="outline" onClick={back} disabled={step === 0}>
               Back
             </Button>
-            {step < steps.length - 1 ? (
+            {step > 0 && step < steps.length - 1 ? (
               <Button variant="secondary" onClick={next}>
                 Skip for now
               </Button>

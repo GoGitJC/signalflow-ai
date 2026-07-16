@@ -135,6 +135,9 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
   const [retellStatus, setRetellStatus] = useState<RetellIntegrationStatus | null>(null);
   const [calcomStatus, setCalcomStatus] = useState<CalComIntegrationStatus | null>(null);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+  const [auditQuery, setAuditQuery] = useState("");
+  const [auditSource, setAuditSource] = useState<"all" | "auth" | "integration">("all");
+  const [exporting, setExporting] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     name: "SignalFlow Demo Business",
     phone: "",
@@ -143,11 +146,23 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
     hours: "Mon–Fri 8:00–17:00",
   });
 
+  const loadAudit = () => {
+    if (!businessId) return;
+    api
+      .auditEvents(businessId, {
+        q: auditQuery || undefined,
+        source: auditSource === "all" ? undefined : auditSource,
+        limit: 100,
+      })
+      .then(setAuditEvents)
+      .catch(() => setAuditEvents([]));
+  };
+
   useEffect(() => {
     if (!businessId) return;
     api.retellStatus(businessId).then(setRetellStatus).catch(() => setRetellStatus(null));
     api.calcomStatus(businessId).then(setCalcomStatus).catch(() => setCalcomStatus(null));
-    api.auditEvents(businessId).then(setAuditEvents).catch(() => setAuditEvents([]));
+    loadAudit();
   }, [businessId]);
 
   return (
@@ -168,7 +183,10 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
           <TabsTrigger value="business">Business</TabsTrigger>
           <TabsTrigger value="hours">Hours</TabsTrigger><TabsTrigger value="transfer">Transfer</TabsTrigger>
           <TabsTrigger value="providers">Integrations</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger><TabsTrigger value="security">Security & API keys</TabsTrigger><TabsTrigger value="audit">Audit log</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="security">Security & API keys</TabsTrigger>
+          <TabsTrigger value="exports">Exports</TabsTrigger>
+          <TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="business" className="space-y-4">
@@ -330,7 +348,101 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
         <TabsContent value="users">
           <UsersInvitesPanel />
         </TabsContent>
-        <TabsContent value="audit"><Card><CardHeader><CardTitle>Audit log</CardTitle><CardDescription>Recent security and integration activity.</CardDescription></CardHeader><CardContent className="space-y-3">{auditEvents.length ? auditEvents.map((event) => <div key={event.id} className="flex justify-between gap-4 border-b border-border pb-3 text-sm"><div><p className="font-medium">{event.action}</p><p className="text-muted-foreground">{event.detail || event.provider || event.source}</p></div><div className="text-right text-muted-foreground">{event.status}<br />{new Date(event.created_at).toLocaleString()}</div></div>) : <p className="text-sm text-muted-foreground">No audit events available.</p>}</CardContent></Card></TabsContent>
+        <TabsContent value="exports">
+          <Card>
+            <CardHeader>
+              <CardTitle>CSV exports</CardTitle>
+              <CardDescription>Download customer, appointment, and call data for this workspace (owner/admin).</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {(
+                [
+                  ["customers", "Export customers"],
+                  ["appointments", "Export appointments"],
+                  ["calls", "Export calls"],
+                ] as const
+              ).map(([kind, label]) => (
+                <Button
+                  key={kind}
+                  variant="outline"
+                  disabled={Boolean(exporting)}
+                  onClick={async () => {
+                    setExporting(kind);
+                    try {
+                      await api.exportCsv(businessId, kind);
+                      toast({ title: `${label} ready` });
+                    } catch (err) {
+                      toast({
+                        title: "Export failed",
+                        description: err instanceof Error ? err.message : "Error",
+                        variant: "danger",
+                      });
+                    } finally {
+                      setExporting(null);
+                    }
+                  }}
+                >
+                  {exporting === kind ? "Exporting…" : label}
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <Card>
+            <CardHeader>
+              <CardTitle>Audit log</CardTitle>
+              <CardDescription>Searchable security and integration activity.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  placeholder="Search action, status, detail…"
+                  value={auditQuery}
+                  onChange={(event) => setAuditQuery(event.target.value)}
+                  className="max-w-sm"
+                />
+                <select
+                  className="rounded-md border border-input bg-background px-3 text-sm"
+                  value={auditSource}
+                  onChange={(event) =>
+                    setAuditSource(event.target.value as "all" | "auth" | "integration")
+                  }
+                >
+                  <option value="all">All sources</option>
+                  <option value="auth">Auth</option>
+                  <option value="integration">Integration</option>
+                </select>
+                <Button variant="outline" onClick={loadAudit}>
+                  Search
+                </Button>
+              </div>
+              {auditEvents.length ? (
+                auditEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex justify-between gap-4 border-b border-border pb-3 text-sm"
+                  >
+                    <div>
+                      <p className="font-medium">{event.action}</p>
+                      <p className="text-muted-foreground">
+                        {event.detail || event.provider || event.source}
+                      </p>
+                    </div>
+                    <div className="text-right text-muted-foreground">
+                      {event.status}
+                      <br />
+                      {new Date(event.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No audit events available.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
