@@ -47,9 +47,10 @@ See [integrations/retell.md](integrations/retell.md) — common causes:
 
 ## CORS audit
 
-- Allowlist is a single origin (`SIGNALFLOW_FRONTEND_ORIGIN`), not `*`.
+- Allowlist via `CORS_ORIGINS` (comma-separated) or fallback `SIGNALFLOW_FRONTEND_ORIGIN`.
+- Production rejects localhost origins (startup fail-fast).
 - `allow_credentials=True` requires exact origin match for cookie sessions.
-- Production startup rejects localhost origins.
+- Optional `TRUSTED_HOSTS` enables Starlette `TrustedHostMiddleware`.
 
 ## Cookie configuration
 

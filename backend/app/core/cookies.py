@@ -18,6 +18,7 @@ def set_auth_cookies(
     refresh_days = (
         settings.jwt_refresh_remember_days if remember_me else settings.jwt_refresh_ttl_days
     )
+    domain = settings.auth_cookie_domain or None
     response.set_cookie(
         key=settings.auth_access_cookie_name,
         value=access_token,
@@ -26,6 +27,7 @@ def set_auth_cookies(
         secure=settings.auth_cookie_secure,
         samesite=settings.auth_cookie_samesite,
         path="/",
+        domain=domain,
     )
     response.set_cookie(
         key=settings.auth_refresh_cookie_name,
@@ -35,9 +37,18 @@ def set_auth_cookies(
         secure=settings.auth_cookie_secure,
         samesite=settings.auth_cookie_samesite,
         path="/",
+        domain=domain,
     )
 
 
 def clear_auth_cookies(response: Response, *, settings: Settings) -> None:
+    domain = settings.auth_cookie_domain or None
     for name in (settings.auth_access_cookie_name, settings.auth_refresh_cookie_name):
-        response.delete_cookie(key=name, path="/")
+        response.delete_cookie(
+            key=name,
+            path="/",
+            domain=domain,
+            secure=settings.auth_cookie_secure,
+            httponly=True,
+            samesite=settings.auth_cookie_samesite,
+        )

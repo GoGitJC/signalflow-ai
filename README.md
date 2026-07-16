@@ -199,7 +199,11 @@ Provider docs: [Retell](docs/integrations/retell.md) · [Twilio](docs/integratio
 
 ## Deployment overview
 
-Local and CI use Dockerfiles under `backend/` and `frontend/`. Production deployment (managed Postgres, secrets, TLS, reverse proxy) is documented in [docs/deployment.md](docs/deployment.md) and readiness criteria in [docs/production-readiness.md](docs/production-readiness.md).
+**Production topology:** Cloudflare → Vercel (www) + Render (api + Postgres).
+
+Guides: [docs/deployment.md](docs/deployment.md) · [Render](docs/deployment/render.md) · [Vercel](docs/deployment/vercel.md) · [Cloudflare](docs/deployment/cloudflare.md) · [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md).
+
+Cloud deploy requires **human approval** — configuration is in-repo; nothing auto-deploys to customer domains from this change set.
 
 ## Screenshots
 
@@ -242,7 +246,8 @@ Tracked in [PHASES.md](PHASES.md). Core product + Phase 5 production readiness a
 |-----|-------------|
 | [Architecture](docs/architecture.md) | System design |
 | [Local development](docs/local-development.md) | Day-to-day setup |
-| [Deployment](docs/deployment.md) | Containers and hosting (Render/Railway/DO/AWS) |
+| [Deployment](docs/deployment.md) | Cloudflare + Vercel + Render |
+| [Launch checklist](LAUNCH_CHECKLIST.md) | Public go-live gate |
 | [Operations](docs/operations.md) | Backups, restore, probes, rate limits |
 | [Monitoring](docs/monitoring.md) | Metrics and alerts |
 | [Onboarding](docs/onboarding.md) | First-run customer setup |

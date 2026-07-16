@@ -1,15 +1,30 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "SignalFlow AI"
-    environment: str = "development"
+    environment: str = Field(
+        default="development",
+        validation_alias=AliasChoices("SIGNALFLOW_ENVIRONMENT", "APP_ENV", "ENVIRONMENT"),
+    )
     database_url: str = "postgresql+psycopg://signalflow:signalflow@db:5432/signalflow"
-    frontend_origin: str = "http://localhost:5173"
+    frontend_origin: str = Field(
+        default="http://localhost:5173",
+        validation_alias=AliasChoices("SIGNALFLOW_FRONTEND_ORIGIN", "FRONTEND_ORIGIN"),
+    )
+    # Comma-separated allowlist for credentialed CORS (www + app dashboards).
+    cors_origins: str = Field(
+        default="",
+        validation_alias=AliasChoices("CORS_ORIGINS", "SIGNALFLOW_CORS_ORIGINS"),
+    )
+    trusted_hosts: str = Field(
+        default="",
+        validation_alias=AliasChoices("TRUSTED_HOSTS", "SIGNALFLOW_TRUSTED_HOSTS"),
+    )
     app_public_api_url: str = Field(
         default="http://localhost:8000", validation_alias="APP_PUBLIC_API_URL"
     )
@@ -54,6 +69,10 @@ class Settings(BaseSettings):
     auth_cookie_samesite: Literal["lax", "strict", "none"] = Field(
         default="lax", validation_alias="AUTH_COOKIE_SAMESITE"
     )
+    auth_cookie_domain: str = Field(
+        default="",
+        validation_alias=AliasChoices("AUTH_COOKIE_DOMAIN", "SIGNALFLOW_AUTH_COOKIE_DOMAIN"),
+    )
     auth_access_cookie_name: str = "sf_access"
     auth_refresh_cookie_name: str = "sf_refresh"
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
@@ -67,6 +86,23 @@ class Settings(BaseSettings):
         populate_by_name=True,
     )
 
+    @field_validator("auth_cookie_samesite", mode="before")
+    @classmethod
+    def normalize_samesite(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.lower()
+        return value
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, value: object) -> object:
+        # Render/Heroku style URLs use postgresql://; SQLAlchemy needs the psycopg driver.
+        if isinstance(value, str) and value.startswith("postgresql://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgresql://")
+        if isinstance(value, str) and value.startswith("postgres://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgres://")
+        return value
+
     @model_validator(mode="after")
     def sync_integration_mode(self) -> "Settings":
         if self.integration_mode == "mock":
@@ -78,6 +114,22 @@ class Settings(BaseSettings):
     @property
     def is_live_mode(self) -> bool:
         return self.integration_mode == "live"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        raw = self.cors_origins.strip()
+        if raw:
+            return [origin.strip() for origin in raw.split(",") if origin.strip()]
+        if self.frontend_origin.strip():
+            return [self.frontend_origin.strip()]
+        return []
+
+    @property
+    def trusted_host_list(self) -> list[str]:
+        raw = self.trusted_hosts.strip()
+        if not raw:
+            return []
+        return [host.strip() for host in raw.split(",") if host.strip()]
 
     @property
     def retell_webhook_url(self) -> str:

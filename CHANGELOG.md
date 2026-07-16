@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Production deployment pack: `render.yaml`, `frontend/vercel.json`, `.env.production.example`, Cloudflare/Render/Vercel runbooks, `LAUNCH_CHECKLIST.md`, disaster-recovery guide.
+- Multi-origin `CORS_ORIGINS`, optional `TRUSTED_HOSTS`, `APP_ENV` alias, Render `postgresql://` → `psycopg` URL normalization, `$PORT`-aware backend image.
 - Closed-beta launch pack: HVAC demo tenant (`Summit HVAC Pros`), onboarding welcome + test-call checklist, Final Acceptance page (`/readiness`), CSV exports, searchable audit log.
 - Marketing polish: brand logo, favicon, loading screen, 404 page, empty-state illustrations, Help deep links.
 - Release notes: `docs/RELEASE_NOTES_v1.0_BETA.md`.

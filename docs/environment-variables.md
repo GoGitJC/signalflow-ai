@@ -52,13 +52,19 @@ Legacy alias: `SIGNALFLOW_CALCOM_WEBHOOK_SECRET` for Cal.com webhook HMAC.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `APP_ENV` / `SIGNALFLOW_ENVIRONMENT` | `development` | `production` enables fail-fast validation |
+| `CORS_ORIGINS` | empty | Comma-separated dashboard origins (www + app) |
+| `TRUSTED_HOSTS` | empty | Comma-separated Host header allowlist |
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `LOG_JSON` | `true` | Structured JSON logs |
 | `RATE_LIMIT_ENABLED` | `true` | Auth/webhook rate limiting |
 | `JWT_SECRET` | empty | Required for cookie sessions; fail-fast in production |
 | `AUTH_COOKIE_SECURE` | `false` | Must be `true` in production |
+| `AUTH_COOKIE_SAMESITE` | `lax` | Use `lax` for www→api same-site cookies |
+| `AUTH_COOKIE_DOMAIN` | empty | Optional parent domain (usually leave empty) |
+| `APP_PUBLIC_API_URL` | localhost | Public API URL for webhooks |
 
-Production (`SIGNALFLOW_ENVIRONMENT=production`) also requires encryption key, non-localhost `SIGNALFLOW_FRONTEND_ORIGIN`, and secure cookies.
+Production also requires encryption key and non-localhost CORS / public API URL.
 
 ## Frontend (VITE_ prefix)
 
