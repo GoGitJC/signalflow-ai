@@ -1,24 +1,48 @@
 # Production readiness
 
-SignalFlow AI is **not production-ready for untrusted multi-tenant traffic** until authentication and live provider hardening land. Use this checklist before accepting real callers.
+SignalFlow AI is **not production-ready for untrusted multi-tenant traffic** until authentication and the Final Production Acceptance Checklist are complete. Use this document before accepting real callers.
 
-## Live integration acceptance (pre-merge)
+## Integration status (engineering)
 
-Before treating Retell/Cal.com as demo-ready:
+| Area | Status |
+|------|--------|
+| Retell live tools + webhooks | **Complete** (verified in live acceptance) |
+| Cal.com availability | **Complete** (verified live) |
+| Cal.com booking path | **Implemented**; final validation with valid customer data is a **release checklist** item |
+| Dashboard call/appointment persistence | **Complete** |
+| `ALLOW_LIVE_BOOKING` | Keep **`false`** until Final Production Acceptance |
 
-- [ ] `ALLOW_LIVE_BOOKING=false` in runtime
-- [ ] Public `/health` 200 through current tunnel URL
-- [ ] No-booking live call: availability 200, book 403, call persisted
-- [ ] Controlled booking only with written operator approval
-- [ ] Gate restored to false after any booking attempt
-- [ ] Record results in `docs/integrations/live-acceptance-*.md`
-- [ ] Remember ngrok free URLs expire/change on restart
+Live acceptance notes: [integrations/live-acceptance-2026-07-16.md](integrations/live-acceptance-2026-07-16.md).
 
-Latest run: [docs/integrations/live-acceptance-2026-07-16.md](integrations/live-acceptance-2026-07-16.md) — Phase B passed; Phase C booking stopped after Cal.com `400`.
+A Cal.com HTTP `400` during controlled testing was caused by **invalid attendee email input**, not by a missing booking architecture.
+
+## Final Production Acceptance Checklist
+
+Complete before enabling live booking in a shared/production environment:
+
+- [ ] Successful live booking with **valid** attendee name, email, and phone
+- [ ] Booking appears in **Cal.com** for the mapped event type
+- [ ] Appointment appears in the **SignalFlow** dashboard under the correct business
+- [ ] Cal.com booking **UID** stored locally as `appointments.cal_event_id`
+- [ ] Booking **confirmation SMS** delivered (Twilio live path or approved substitute)
+- [ ] **Duplicate booking protection** verified (second identical book does not create a second Cal.com event)
+- [ ] Booking **cancellation** verified (Cal.com cancel syncs or is reconciled in SignalFlow)
+
+Until this checklist is signed off, leave `ALLOW_LIVE_BOOKING=false`.
+
+## Demo / pre-merge live checks (already exercised)
+
+- [x] `ALLOW_LIVE_BOOKING=false` in runtime after tests
+- [x] Public `/health` 200 through tunnel URL
+- [x] No-booking live call: availability 200, book 403, call persisted
+- [x] Gate restored to false after booking attempts
+- [x] Results recorded in `docs/integrations/live-acceptance-*.md`
+- [ ] Remember ngrok free URLs expire/change on restart (ongoing ops)
 
 ## Must-have before go-live
 
 - [ ] Authentication and membership authorization (Phase 2)
+- [ ] Final Production Acceptance Checklist (above)
 - [ ] Webhook secrets mandatory in production
 - [ ] Live provider clients with timeouts, retries, and error budgets
 - [ ] Encrypted credential storage with managed key

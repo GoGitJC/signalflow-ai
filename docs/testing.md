@@ -63,4 +63,9 @@ docker compose run --rm backend-test sh -c "ruff check . && ruff format --check 
 ```
 
 Controlled live acceptance (operator-run): see [docs/integrations/live-acceptance-2026-07-16.md](integrations/live-acceptance-2026-07-16.md).
-Keep `ALLOW_LIVE_BOOKING=false` unless explicitly approving one real booking.
+
+**Engineering status:** Retell tools/webhooks, Cal.com availability, and dashboard persistence are verified.  
+A Phase C Cal.com `400` during controlled testing is classified as **invalid attendee email input**, not an open architecture bug.
+
+Keep `ALLOW_LIVE_BOOKING=false` unless explicitly approving one real booking with valid customer information.  
+Final booking sign-off lives on the [Final Production Acceptance Checklist](production-readiness.md#final-production-acceptance-checklist).

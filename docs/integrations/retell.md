@@ -135,7 +135,7 @@ Retell custom functions POST an envelope `{ "call": {...}, "name": "...", "args"
 These endpoints unwrap `args` (and fall back to `call.agent_id` / `call.call_id` when needed).
 Flat JSON bodies are still accepted for local tests and scripts.
 
-Acceptance notes (no-booking gate verified live): [live-acceptance-2026-07-16.md](./live-acceptance-2026-07-16.md).
+Acceptance notes (no-booking gate verified live; Phase C email-input issue documented): [live-acceptance-2026-07-16.md](./live-acceptance-2026-07-16.md).
 
 Do not configure these as live Retell custom functions until the public webhook/tool base URL is approved.
 

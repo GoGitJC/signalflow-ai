@@ -180,9 +180,12 @@ docker compose exec backend python -m app.cli.sync_live_integrations --business-
 ./scripts/verify_integrations.sh
 ```
 
-`ALLOW_LIVE_BOOKING` defaults to `false`. Do not enable it until an operator approves a real booking.
+`ALLOW_LIVE_BOOKING` defaults to `false`. Do not enable it until an operator approves a real booking with valid customer information.
 
-Latest controlled acceptance notes: [docs/integrations/live-acceptance-2026-07-16.md](docs/integrations/live-acceptance-2026-07-16.md).
+Latest controlled acceptance notes: [docs/integrations/live-acceptance-2026-07-16.md](docs/integrations/live-acceptance-2026-07-16.md)  
+(Retell + availability + webhooks + dashboard verified; final live booking is a production checklist item).
+
+Final release booking checks: [docs/production-readiness.md](docs/production-readiness.md#final-production-acceptance-checklist).
 
 Provider docs: [Retell](docs/integrations/retell.md) · [Twilio](docs/integrations/twilio.md) · [Cal.com](docs/integrations/calcom.md).
 
@@ -214,22 +217,24 @@ See [docs/security.md](docs/security.md) and [SECURITY.md](SECURITY.md).
 
 ## Known limitations
 
-- No authentication / RBAC enforcement yet (models include `User` / `UserRole`).
-- Live Twilio HTTP client is not implemented; Retell and Cal.com live adapters require `INTEGRATION_MODE=live` and credentials.
-- Frontend settings are read-only; no credential CRUD UI.
-- Pagination, audit logs, async jobs, and observability are planned later phases.
+- No authentication / RBAC enforcement yet (models include `User` / `UserRole`) — Phase 2.
+- Live Twilio HTTP client is not fully productionized; confirmation SMS is on the Final Production Acceptance Checklist.
+- Final live booking with valid customer data is a **release checklist** item (keep `ALLOW_LIVE_BOOKING=false` until then).
+- Pagination, async jobs, and full observability are planned later phases.
 
 ## Roadmap
 
 Tracked in [PHASES.md](PHASES.md):
 
-1. Foundation + simulated completed-call flow *(current baseline)*
-2. Authentication and tenant authorization
-3. Provider integration architecture
+1. Foundation + simulated completed-call flow — done
+2. **Authentication and tenant authorization** — next
+3. Provider integration architecture — largely complete for Retell/Cal.com (live-ready path on `feature/live-retell-calcom-flow`)
 4. Receptionist orchestration
 5. Production dashboard
 6. Async processing and observability
 7. Deployment and operations
+
+Provider live-readiness notes: [docs/integrations/live-acceptance-2026-07-16.md](docs/integrations/live-acceptance-2026-07-16.md).
 
 ## Documentation index
 

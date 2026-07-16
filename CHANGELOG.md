@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
-- Live acceptance report: `docs/integrations/live-acceptance-2026-07-16.md` (Phase B pass; Phase C booking stopped after Cal.com 400).
-
+- Final Production Acceptance Checklist in `docs/production-readiness.md` (valid-customer live booking, SMS, duplicates, cancellation).
+- Live acceptance report: `docs/integrations/live-acceptance-2026-07-16.md` — Phase B verified; Phase C Cal.com `400` classified as invalid test email input (not an architecture blocker).
 - Retell custom-function envelope unwrap (`{call, name, args}`) for live tool POSTs.
 - `ALLOW_LIVE_BOOKING` pytest coverage and cross-tenant denial on Cal.com owner routes.
 - Live-ready Retell ↔ Cal.com flow: voice-friendly tool schemas, booking confirmation gate, call linkage.
@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Changed
 
+- Documentation treats Retell/Cal.com availability/webhooks/dashboard as engineering-complete; final booking validation is release checklist only.
 - `POST /api/integrations/calcom/availability` and `/book` require owner auth (`X-Owner-Token`, `X-Business-Id`) and reject mismatched body `business_id`.
 - `INTEGRATION_MODE` replaces mock-only 501 behavior; mock adapters preserved for tests.
 - Retell webhooks resolve `business_id` from `voice_agents.retell_agent_id` when using official payload format.
