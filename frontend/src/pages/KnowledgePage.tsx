@@ -197,7 +197,7 @@ export function KnowledgePage({
                           <Button size="sm" variant="outline" onClick={() => openEdit(entry)}>
                             Edit
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => void api.knowledgeVersions(entry.id, businessId).then(setVersions)}>
+                          <Button size="sm" variant="outline" onClick={() => void api.knowledgeVersions(entry.id).then(setVersions)}>
                             History
                           </Button>
                           <Button

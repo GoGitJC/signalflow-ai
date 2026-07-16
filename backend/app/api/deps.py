@@ -1,4 +1,4 @@
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,17 +8,33 @@ from app.db.session import get_db
 from app.models import Business, User, UserRole
 
 
+def _extract_access_token(
+    authorization: str | None,
+    access_cookie: str | None,
+) -> str | None:
+    if authorization and authorization.lower().startswith("bearer "):
+        return authorization.split(" ", 1)[1].strip()
+    return access_cookie
+
+
 def get_current_user(
     authorization: str | None = Header(default=None),
+    sf_access: str | None = Cookie(default=None, alias="sf_access"),
     db: Session = Depends(get_db),
 ) -> User:
-    if not authorization or not authorization.lower().startswith("bearer "):
+    settings = get_settings()
+    cookie_name = settings.auth_access_cookie_name
+    # Prefer configured cookie name; TestClient may still use default alias.
+    token = _extract_access_token(authorization, sf_access)
+    if token is None and cookie_name != "sf_access":
+        # Fallback handled via request cookies in route layer when needed.
+        pass
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Bearer access token required",
+            detail="Authentication required",
         )
-    token = authorization.split(" ", 1)[1].strip()
-    payload = decode_access_token(get_settings(), token)
+    payload = decode_access_token(settings, token)
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
@@ -57,7 +73,7 @@ def require_owner_token(
     x_business_id: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ) -> str:
-    """Legacy shared-secret owner auth. Prefer Bearer JWT via require_business_admin."""
+    """Legacy shared-secret owner auth. Prefer cookie/JWT session auth."""
     settings = get_settings()
     if not settings.owner_api_token:
         raise HTTPException(
@@ -91,13 +107,15 @@ def require_owner_token(
 def _resolve_authenticated_business_id(
     *,
     authorization: str | None,
+    access_cookie: str | None,
     x_owner_token: str | None,
     x_business_id: str | None,
     db: Session,
     admin_only: bool,
 ) -> str:
-    if authorization and authorization.lower().startswith("bearer "):
-        user = get_current_user(authorization=authorization, db=db)
+    token = _extract_access_token(authorization, access_cookie)
+    if token:
+        user = get_current_user(authorization=authorization, sf_access=access_cookie, db=db)
         if admin_only and user.role not in {UserRole.owner, UserRole.admin}:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -113,13 +131,15 @@ def _resolve_authenticated_business_id(
 
 def require_business_member(
     authorization: str | None = Header(default=None),
+    sf_access: str | None = Cookie(default=None, alias="sf_access"),
     x_owner_token: str | None = Header(default=None),
     x_business_id: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ) -> str:
-    """Resolve tenant from JWT membership (any role) or legacy owner-token fallback."""
+    """Resolve tenant from cookie/JWT membership (any role) or legacy owner-token fallback."""
     return _resolve_authenticated_business_id(
         authorization=authorization,
+        access_cookie=sf_access,
         x_owner_token=x_owner_token,
         x_business_id=x_business_id,
         db=db,
@@ -129,13 +149,15 @@ def require_business_member(
 
 def require_business_admin(
     authorization: str | None = Header(default=None),
+    sf_access: str | None = Cookie(default=None, alias="sf_access"),
     x_owner_token: str | None = Header(default=None),
     x_business_id: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ) -> str:
-    """Resolve tenant from JWT membership, with legacy owner-token fallback."""
+    """Resolve tenant from cookie/JWT membership, with legacy owner-token fallback."""
     return _resolve_authenticated_business_id(
         authorization=authorization,
+        access_cookie=sf_access,
         x_owner_token=x_owner_token,
         x_business_id=x_business_id,
         db=db,

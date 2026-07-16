@@ -77,7 +77,8 @@ Copy `.env.example` → `.env`. Never commit `.env`.
 | `SIGNALFLOW_FRONTEND_ORIGIN` | CORS origin for the dashboard |
 | `INTEGRATION_MODE` | `mock` (default) or `live` for Retell/Cal.com adapters |
 | `APP_PUBLIC_API_URL` | Public API URL for webhook registration |
-| `OWNER_API_TOKEN` / `VITE_OWNER_API_TOKEN` | Integration settings admin token |
+| `OWNER_API_TOKEN` | Optional bootstrap/CLI owner token (dashboard uses cookies) |
+| `JWT_SECRET` | Required for cookie/JWT sessions |
 | `RETELL_API_KEY`, `RETELL_AGENT_ID`, `RETELL_AGENT_NAME` | Retell live credentials |
 | `CALCOM_API_KEY`, `CALCOM_EVENT_TYPE_ID`, `CALCOM_EVENT_TYPE_SLUG`, `CALCOM_USERNAME` | Cal.com live credentials |
 | `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY` | Fernet key for encrypted integration secrets |
@@ -209,16 +210,16 @@ UI system documentation: [docs/ui.md](docs/ui.md). Product surface: [docs/dashbo
 
 ## Security notes
 
-- JWT auth (`/api/auth/*`) plus legacy `X-Owner-Token` fallback protect tenant and integration admin routes. Prefer Bearer tokens in production.
-- Tenant `business_id` on protected routes must match the authenticated membership (or legacy owner header).
+- Dashboard auth uses HttpOnly cookie sessions (`sf_access` / `sf_refresh`) with automatic refresh. JWTs are not stored in `localStorage`.
+- Tenant `business_id` on protected routes must match the authenticated membership.
 - Webhook HMAC is enforced when the corresponding secret is configured.
 - Never commit `.env`, dumps, or provider credentials.
 
-See [docs/security.md](docs/security.md) and [SECURITY.md](SECURITY.md).
+See [docs/security.md](docs/security.md), [docs/auth.md](docs/auth.md), and [SECURITY.md](SECURITY.md).
 
 ## Known limitations
 
-- Frontend login UI is not shipped yet; local dashboard still uses `VITE_OWNER_API_TOKEN` (JWT storage helpers are ready).
+- Email delivery for verification/reset/invite is stubbed (tokens returned in API responses for local/dev).
 - Multi-business memberships beyond a single `users.business_id` are planned.
 - Live Twilio HTTP client is not fully productionized; confirmation SMS is on the Final Production Acceptance Checklist.
 - Final live booking with valid customer data is a **release checklist** item (keep `ALLOW_LIVE_BOOKING=false` until then).

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Cookie-based auth UX: HttpOnly `sf_access`/`sf_refresh` sessions, login/register/forgot/reset/verify/invite flows, `AuthProvider`, protected routes, Settings users/invitations.
+- Migration `0007_auth_sessions` — email verification timestamp, password reset tokens, invitations.
+- Auth guide: `docs/auth.md`.
 - Phase 3 customer experience: CRM callers API (notes/tags/status), analytics summary, voice-agent config API, KB bulk import + version history, audit event list, call sentiment.
 - Migration `0006_crm_experience` for callers CRM fields, voice agent config, KB versions, call sentiment.
 - Dashboard product guide: `docs/dashboard.md`.
@@ -31,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Changed
 
+- Dashboard authentication no longer uses `localStorage` JWTs or `VITE_OWNER_API_TOKEN`; sessions use HttpOnly cookies with automatic refresh.
 - Dashboard pages upgraded for daily CRM use: Customers, Calls (transcript/timeline/AI actions), Appointments filters, Analytics executive metrics, Voice Agent API config, Knowledge versions/bulk, Settings audit log.
 - Documentation treats Retell/Cal.com availability/webhooks/dashboard as engineering-complete; final booking validation is release checklist only.
 - `POST /api/integrations/calcom/availability` and `/book` require owner auth (`X-Owner-Token`, `X-Business-Id`) and reject mismatched body `business_id`.

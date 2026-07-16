@@ -20,6 +20,8 @@ export function TopNav({
   theme,
   onToggleTheme,
   apiStatus,
+  userLabel,
+  onLogout,
 }: {
   search: string;
   onSearch: (value: string) => void;
@@ -28,6 +30,8 @@ export function TopNav({
   theme: "light" | "dark";
   onToggleTheme: () => void;
   apiStatus: "online" | "degraded" | "offline";
+  userLabel?: string;
+  onLogout?: () => void;
 }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
@@ -52,16 +56,22 @@ export function TopNav({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button type="button" className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
-                <Avatar name="SignalFlow Operator" />
+                <Avatar name={userLabel || "SignalFlow Operator"} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Workspace</DropdownMenuLabel>
+              <DropdownMenuLabel>{userLabel || "Workspace"}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onRefresh}>Refresh dashboard</DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleTheme}>
                 {theme === "dark" ? "Light mode" : "Dark mode"}
               </DropdownMenuItem>
+              {onLogout ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onLogout}>Sign out</DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

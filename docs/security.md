@@ -8,9 +8,10 @@
 | Provider credentials | Encrypted at rest (Fernet) in `integrations.encrypted_credentials` |
 | API responses | Secrets never returned; IDs masked |
 | Webhook integrity | Live Retell: official `X-Retell-Signature` + API key; Cal.com: optional HMAC |
-| Integration admin | Bearer JWT (owner/admin) or legacy `X-Owner-Token` + `X-Business-Id` |
-| Tenant dashboard APIs | Bearer JWT (any role) or legacy owner headers; path/body tenant must match |
-| Auth audit | `auth_audit_events` for register/login/refresh |
+| Integration admin | Cookie/JWT session (owner/admin) or legacy `X-Owner-Token` + `X-Business-Id` |
+| Tenant dashboard APIs | Cookie/JWT session (any role) or legacy owner headers |
+| Auth audit | `auth_audit_events` for register/login/refresh/logout/reset/invite |
+| Dashboard tokens | HttpOnly cookies only — never `localStorage` |
 | Logging | Do not log API keys, webhook bodies, transcripts, or phone numbers |
 
 ## Threats acknowledged
@@ -42,8 +43,8 @@ See [integrations/retell.md](integrations/retell.md) — common causes:
 
 ## Recommended next controls
 
-- JWT/session auth replacing owner token header (in progress: JWT + legacy owner-token fallback on tenant and integration routes)
-- Frontend login UI replacing `VITE_OWNER_API_TOKEN` for production dashboards
+- JWT/session auth with HttpOnly cookies (dashboard); legacy owner-token fallback for CLI/bootstrap only
+- Frontend login UI replacing `VITE_OWNER_API_TOKEN` — shipped
 - Multi-business memberships table beyond single `users.business_id`
 - Mandatory webhook signatures in all non-dev environments
 - PII redaction middleware in structured logs
