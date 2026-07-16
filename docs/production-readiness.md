@@ -39,6 +39,18 @@ Until this checklist is signed off, leave `ALLOW_LIVE_BOOKING=false`.
 - [x] Results recorded in `docs/integrations/live-acceptance-*.md`
 - [ ] Remember ngrok free URLs expire/change on restart (ongoing ops)
 
+## Deployment verification (closed beta)
+
+Before inviting a real customer:
+
+1. **Env:** `JWT_SECRET`, `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY`, `SIGNALFLOW_FRONTEND_ORIGIN`, `AUTH_COOKIE_SECURE=true` (prod), `ALLOW_LIVE_BOOKING=false`, `LOG_JSON=true`, `RATE_LIMIT_ENABLED=true`
+2. **HTTPS:** Terminate TLS at the load balancer / CDN; API and dashboard on HTTPS (except local Compose)
+3. **Cookies:** Secure + HttpOnly; CORS origin exact match
+4. **Build:** `docker build --target production ./frontend` and backend production image; CI green
+5. **Probes:** `/live` + `/ready` wired; open `/readiness` in the dashboard for a live score
+
+See [deployment.md](deployment.md) and [RELEASE_NOTES_v1.0_BETA.md](RELEASE_NOTES_v1.0_BETA.md).
+
 ## Must-have before go-live
 
 - [x] Authentication and membership authorization (Phase 2 / cookie UX)

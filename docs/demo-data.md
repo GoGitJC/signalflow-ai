@@ -1,14 +1,12 @@
 # Demo data
 
-Realistic demo tenant for sales and training.
+Realistic HVAC demo tenant for closed-beta sales and training.
 
 ## Seed command
 
 ```bash
-# Compose
 docker compose run --rm backend python -m app.cli.seed_demo
-
-# Reset and re-seed
+# wipe and recreate
 docker compose run --rm backend python -m app.cli.seed_demo --reset
 ```
 
@@ -16,23 +14,23 @@ docker compose run --rm backend python -m app.cli.seed_demo --reset
 
 | Field | Value |
 |-------|-------|
-| Email | `owner@alamodental-demo.example` |
+| Email | `owner@summithvac-demo.example` |
 | Password | `DemoPass123!` |
-| Business | Alamo Dental Demo |
+| Business | Summit HVAC Pros |
 
 Use only in non-production environments.
 
 ## What is populated
 
-- Dental business profile (hours, metro service area, phones)
+- HVAC business profile (Austin metro, hours, emergency forwarding)
 - Owner user (verified email)
-- Voice agent config (greeting + prompt)
-- Callers (realistic names/phones)
-- Calls with transcripts, AI summaries, outcomes
-- Appointments across upcoming/past windows
-- Knowledge-base FAQ entries
+- Voice agent greeting + HVAC prompt
+- Five callers with tags/notes
+- Five calls with transcripts, AI summaries, intents, sentiment
+- Appointments (diagnostic, tune-up, heat-pump estimate)
+- Knowledge-base FAQs (hours, service area, pricing, brands, maintenance)
 
-Enough volume for Overview, Calls, Appointments, Customers, and Analytics to look “live.”
+Enough volume for Overview, Calls, Appointments, Customers, and Analytics.
 
 ## Notes
 

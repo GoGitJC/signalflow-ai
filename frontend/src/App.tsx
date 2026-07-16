@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNav } from "@/components/layout/TopNav";
 import { ErrorState } from "@/components/shared/EmptyState";
@@ -19,6 +19,9 @@ import { OverviewPage } from "@/pages/OverviewPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { VoiceAgentPage } from "@/pages/VoiceAgentPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
+import { AcceptancePage } from "@/pages/AcceptancePage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
@@ -40,6 +43,7 @@ const pathToPage: Record<string, PageId> = {
   "/customers": "customers",
   "/analytics": "analytics",
   "/settings": "settings",
+  "/readiness": "readiness",
   "/help": "help",
   "/onboarding": "settings",
 };
@@ -95,6 +99,9 @@ function AppShell() {
   }, []);
 
   const loading = data.status === "loading" || data.status === "idle";
+  const bootPaths = new Set(["/settings", "/help", "/onboarding", "/readiness", "/voice-agent"]);
+  const showBootLoader =
+    loading && data.status !== "success" && !bootPaths.has(location.pathname);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -125,8 +132,14 @@ function AppShell() {
           onLogout={() => void logout().then(() => navigate("/login"))}
         />
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
-          {data.status === "error" && page !== "settings" && page !== "help" && page !== "voice-agent" ? (
+          {data.status === "error" &&
+          page !== "settings" &&
+          page !== "help" &&
+          page !== "voice-agent" &&
+          page !== "readiness" ? (
             <ErrorState description={data.error} onRetry={() => void data.reload()} />
+          ) : showBootLoader ? (
+            <LoadingScreen />
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
@@ -210,8 +223,9 @@ function AppShell() {
                   />
                   <Route path="/settings" element={<SettingsPage businessId={data.businessId} />} />
                   <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/readiness" element={<AcceptancePage />} />
                   <Route path="/help" element={<HelpPage />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </motion.div>
             </AnimatePresence>

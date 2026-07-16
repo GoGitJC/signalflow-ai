@@ -246,7 +246,8 @@ Tracked in [PHASES.md](PHASES.md). Core product + Phase 5 production readiness a
 | [Operations](docs/operations.md) | Backups, restore, probes, rate limits |
 | [Monitoring](docs/monitoring.md) | Metrics and alerts |
 | [Onboarding](docs/onboarding.md) | First-run customer setup |
-| [Demo data](docs/demo-data.md) | Seed CLI for demos |
+| [Demo data](docs/demo-data.md) | HVAC demo seed |
+| [Release notes (v1.0 Beta)](docs/RELEASE_NOTES_v1.0_BETA.md) | Closed-beta release notes |
 | [Environment variables](docs/environment-variables.md) | Config reference |
 | [API](docs/api.md) | HTTP surface |
 | [Database](docs/database.md) | Schema and migrations |

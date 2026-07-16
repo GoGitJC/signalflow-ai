@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function AuthShell({
   title,
@@ -15,7 +16,7 @@ export function AuthShell({
 }) {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.12),_transparent_55%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.10),_transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.14),_transparent_55%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_45%)]" />
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -23,10 +24,10 @@ export function AuthShell({
         className="relative w-full max-w-md rounded-3xl border border-border/80 bg-card/95 p-8 shadow-sm backdrop-blur"
       >
         <div className="mb-8">
-          <Link to="/login" className="text-sm font-semibold tracking-tight text-primary">
-            SignalFlow AI
+          <Link to="/login">
+            <BrandLogo />
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
+          <h1 className="mt-6 text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
           {subtitle ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p> : null}
         </div>
         {children}
