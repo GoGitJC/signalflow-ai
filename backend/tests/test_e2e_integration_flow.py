@@ -60,8 +60,10 @@ def test_e2e_mocked_call_availability_booking_dashboard(client, business_with_ag
     assert webhook.status_code == 200
     assert webhook.json()["appointment_id"]
 
-    calls = client.get(f"/api/businesses/{business['id']}/calls").json()
-    appointments = client.get(f"/api/businesses/{business['id']}/appointments").json()
+    calls = client.get(f"/api/businesses/{business['id']}/calls", headers=headers).json()
+    appointments = client.get(
+        f"/api/businesses/{business['id']}/appointments", headers=headers
+    ).json()
     assert len(calls) == 1
     assert len(appointments) == 1
     assert calls[0]["appointment_booked"] is True

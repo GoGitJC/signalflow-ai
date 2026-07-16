@@ -6,12 +6,12 @@ from fastapi import HTTPException
 
 from app.integrations.errors import ProviderConflictError, ProviderTimeoutError
 from app.integrations.retell_signature import verify_retell_signature
-from tests.conftest import retell_signature
+from tests.conftest import create_business, retell_signature, tenant_headers
 
 
 def test_agent_to_business_mapping_and_cross_tenant_denial(client, business_with_agent):
     business, _ = business_with_agent
-    other = client.post("/api/businesses", json={"name": "Other"}).json()
+    other = create_business(client, name="Other")
     start = datetime.now(UTC) + timedelta(days=5)
     ok = client.post(
         "/api/retell/tools/check_availability",
@@ -97,13 +97,18 @@ def test_voice_tool_booking_requires_confirmation_and_links_call(client, busines
     assert body["booked"] is True
     assert body["appointment_id"]
 
-    appointments = client.get(f"/api/businesses/{business['id']}/appointments").json()
+    headers = tenant_headers(business["id"])
+    appointments = client.get(
+        f"/api/businesses/{business['id']}/appointments", headers=headers
+    ).json()
     assert len(appointments) == 1
     assert appointments[0]["id"] == body["appointment_id"]
     assert appointments[0]["call_id"] == call["id"]
 
     call_detail = client.get(
-        f"/api/calls/{call['id']}", params={"business_id": business["id"]}
+        f"/api/calls/{call['id']}",
+        params={"business_id": business["id"]},
+        headers=headers,
     ).json()
     assert call_detail["appointment_booked"] is True
 
@@ -226,7 +231,7 @@ def test_live_booking_gate_blocks_when_disabled(client, business_with_agent, mon
 
 def test_calcom_routes_reject_cross_tenant_header(client, business_with_agent):
     business, headers = business_with_agent
-    other = client.post("/api/businesses", json={"name": "Other"}).json()
+    other = create_business(client, name="Other")
     start = datetime.now(UTC) + timedelta(days=12)
     denied = client.post(
         "/api/integrations/calcom/availability",
@@ -264,7 +269,7 @@ def test_provider_timeout_maps_and_invalid_signature(monkeypatch):
 
 def test_duplicate_webhook_and_cross_tenant_call_read(client, business_with_agent):
     business, _ = business_with_agent
-    other = client.post("/api/businesses", json={"name": "Tenant B"}).json()
+    other = create_business(client, name="Tenant B")
     start = datetime.now(UTC).replace(microsecond=0)
     payload = {
         "event_id": "dup-webhook-1",
@@ -279,7 +284,11 @@ def test_duplicate_webhook_and_cross_tenant_call_read(client, business_with_agen
     assert first.status_code == 200
     assert second.json()["duplicate"] is True
     call_id = first.json()["call"]["id"]
-    denied = client.get(f"/api/calls/{call_id}", params={"business_id": other["id"]})
+    denied = client.get(
+        f"/api/calls/{call_id}",
+        params={"business_id": other["id"]},
+        headers=tenant_headers(other["id"]),
+    )
     assert denied.status_code == 404
 
 

@@ -35,6 +35,23 @@ def get_current_user(
     return user
 
 
+def require_bootstrap_owner(
+    x_owner_token: str | None = Header(default=None),
+) -> None:
+    """Shared-secret gate for bootstrap endpoints (e.g. create business without JWT)."""
+    settings = get_settings()
+    if not settings.owner_api_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Owner API token is not configured",
+        )
+    if not x_owner_token or x_owner_token != settings.owner_api_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Owner authentication required",
+        )
+
+
 def require_owner_token(
     x_owner_token: str | None = Header(default=None),
     x_business_id: str | None = Header(default=None),
@@ -71,16 +88,17 @@ def require_owner_token(
     return x_business_id
 
 
-def require_business_admin(
-    authorization: str | None = Header(default=None),
-    x_owner_token: str | None = Header(default=None),
-    x_business_id: str | None = Header(default=None),
-    db: Session = Depends(get_db),
+def _resolve_authenticated_business_id(
+    *,
+    authorization: str | None,
+    x_owner_token: str | None,
+    x_business_id: str | None,
+    db: Session,
+    admin_only: bool,
 ) -> str:
-    """Resolve tenant from JWT membership, with legacy owner-token fallback."""
     if authorization and authorization.lower().startswith("bearer "):
         user = get_current_user(authorization=authorization, db=db)
-        if user.role not in {UserRole.owner, UserRole.admin}:
+        if admin_only and user.role not in {UserRole.owner, UserRole.admin}:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Owner or admin role required",
@@ -91,3 +109,43 @@ def require_business_admin(
         x_business_id=x_business_id,
         db=db,
     )
+
+
+def require_business_member(
+    authorization: str | None = Header(default=None),
+    x_owner_token: str | None = Header(default=None),
+    x_business_id: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> str:
+    """Resolve tenant from JWT membership (any role) or legacy owner-token fallback."""
+    return _resolve_authenticated_business_id(
+        authorization=authorization,
+        x_owner_token=x_owner_token,
+        x_business_id=x_business_id,
+        db=db,
+        admin_only=False,
+    )
+
+
+def require_business_admin(
+    authorization: str | None = Header(default=None),
+    x_owner_token: str | None = Header(default=None),
+    x_business_id: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> str:
+    """Resolve tenant from JWT membership, with legacy owner-token fallback."""
+    return _resolve_authenticated_business_id(
+        authorization=authorization,
+        x_owner_token=x_owner_token,
+        x_business_id=x_business_id,
+        db=db,
+        admin_only=True,
+    )
+
+
+def assert_tenant_access(authenticated_business_id: str, requested_business_id: str) -> None:
+    if authenticated_business_id != requested_business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed for this business",
+        )

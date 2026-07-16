@@ -296,7 +296,8 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle>Owner API token</CardTitle>
               <CardDescription>
-                Integration settings use <code>X-Owner-Token</code> from <code>VITE_OWNER_API_TOKEN</code>. API keys are
+                Integration settings use Bearer JWT (preferred) or <code>X-Owner-Token</code> from{" "}
+                <code>VITE_OWNER_API_TOKEN</code>. Dashboard API calls send the same auth headers. API keys are
                 never stored in the browser.
               </CardDescription>
             </CardHeader>

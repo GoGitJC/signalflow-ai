@@ -1,5 +1,6 @@
 from app.models.entities import (
     Appointment,
+    AuthAuditEvent,
     Base,
     Business,
     Call,
@@ -17,6 +18,7 @@ from app.models.entities import (
 
 __all__ = [
     "Appointment",
+    "AuthAuditEvent",
     "Base",
     "Business",
     "Call",

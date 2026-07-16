@@ -160,13 +160,17 @@ def test_calcom_webhook_status_update(client, business_with_agent):
         json={"id": "evt-1", "uid": booked["cal_event_id"], "status": "cancelled"},
     )
     assert webhook.status_code == 200
-    appointments = client.get(f"/api/businesses/{business['id']}/appointments").json()
+    appointments = client.get(
+        f"/api/businesses/{business['id']}/appointments", headers=headers
+    ).json()
     assert appointments[0]["status"] == "cancelled"
 
 
 def test_cross_tenant_calcom_booking_denied(client, business_with_agent):
+    from tests.conftest import create_business, tenant_headers
+
     business, headers = business_with_agent
-    other = client.post("/api/businesses", json={"name": "Other Biz"}).json()
+    other = create_business(client, name="Other Biz")
     start = datetime.now(UTC) + timedelta(days=4)
     booked = client.post(
         "/api/integrations/calcom/book",
@@ -179,5 +183,8 @@ def test_cross_tenant_calcom_booking_denied(client, business_with_agent):
             "service": "Exam",
         },
     ).json()
-    appointments = client.get(f"/api/businesses/{other['id']}/appointments").json()
+    appointments = client.get(
+        f"/api/businesses/{other['id']}/appointments",
+        headers=tenant_headers(other["id"]),
+    ).json()
     assert all(item["id"] != booked["appointment_id"] for item in appointments)

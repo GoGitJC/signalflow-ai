@@ -129,8 +129,10 @@ def test_retell_connection_test_mock(client, business_with_agent):
 
 
 def test_cross_tenant_retell_tool_denied(client, business_with_agent):
+    from tests.conftest import create_business
+
     business, _ = business_with_agent
-    other = client.post("/api/businesses", json={"name": "Other"}).json()
+    other = create_business(client, name="Other")
     start = datetime.now(UTC)
     denied = client.post(
         "/api/retell/tools/check_availability",

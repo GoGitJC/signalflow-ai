@@ -100,6 +100,42 @@ def test_jwt_protects_integrations_and_legacy_owner_token(client):
     assert legacy.status_code == 200
 
 
+def test_jwt_protects_tenant_reads(client):
+    registered = client.post(
+        "/api/auth/register",
+        json={
+            "business_name": "Tenant Dental",
+            "name": "Owner",
+            "email": "tenant-owner@auth-test.example",
+            "password": "securepass1",
+        },
+    )
+    assert registered.status_code == 201
+    token = registered.json()["access_token"]
+    business_id = registered.json()["business_id"]
+
+    ok = client.get(
+        f"/api/businesses/{business_id}/calls",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert ok.status_code == 200
+
+    other = client.post(
+        "/api/auth/register",
+        json={
+            "business_name": "Other Dental",
+            "name": "Other",
+            "email": "other-owner@auth-test.example",
+            "password": "securepass1",
+        },
+    ).json()
+    denied = client.get(
+        f"/api/businesses/{other['business_id']}/calls",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert denied.status_code == 403
+
+
 def test_require_business_admin_rejects_member_role():
     member = User(
         id="u1",

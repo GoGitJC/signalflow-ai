@@ -35,6 +35,20 @@ OWNER_HEADERS = {
 }
 
 
+def tenant_headers(business_id: str) -> dict[str, str]:
+    return {**OWNER_HEADERS, "X-Business-Id": business_id}
+
+
+def create_business(client, name: str = "Alamo Dental") -> dict:
+    response = client.post(
+        "/api/businesses",
+        json={"name": name, "industry": "dental"},
+        headers=OWNER_HEADERS,
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
 @pytest.fixture(autouse=True)
 def reset_database():
     Base.metadata.drop_all(engine)
@@ -62,7 +76,7 @@ def client():
 
 @pytest.fixture
 def business_with_agent(client):
-    business = client.post("/api/businesses", json={"name": "Alamo Dental"}).json()
+    business = create_business(client)
     with TestingSession() as session:
         session.add(
             User(
@@ -83,7 +97,7 @@ def business_with_agent(client):
             )
         )
         session.commit()
-    headers = {**OWNER_HEADERS, "X-Business-Id": business["id"]}
+    headers = tenant_headers(business["id"])
     return business, headers
 
 

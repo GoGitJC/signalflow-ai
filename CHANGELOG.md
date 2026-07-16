@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 ### Added
 
 - Phase 2 auth slice: `POST /api/auth/register|login|refresh`, `GET /api/auth/me`, JWT access/refresh tokens, `users.password_hash`, `refresh_tokens` migration `0004_auth_tokens`.
+- Auth audit foundation: `auth_audit_events` migration `0005_auth_audit_events` for register/login/refresh outcomes.
 - Integration admin routes accept Bearer JWT (owner/admin) with legacy `X-Owner-Token` fallback.
+- Tenant CRUD (calls, appointments, KB, business read/update) requires JWT membership or legacy owner headers; `POST /api/businesses` requires bootstrap owner token.
 - Final Production Acceptance Checklist in `docs/production-readiness.md` (valid-customer live booking, SMS, duplicates, cancellation).
 - Live acceptance report: `docs/integrations/live-acceptance-2026-07-16.md` — Phase B verified; Phase C Cal.com `400` classified as invalid test email input (not an architecture blocker).
 - Retell custom-function envelope unwrap (`{call, name, args}`) for live tool POSTs.

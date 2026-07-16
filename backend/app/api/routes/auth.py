@@ -22,6 +22,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserResponse,
 )
+from app.services.audit import record_auth_audit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 settings = get_settings()
@@ -71,14 +72,36 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     )
     db.add(user)
     db.flush()
+    record_auth_audit(
+        db,
+        action="register",
+        status="ok",
+        business_id=business.id,
+        user_id=user.id,
+    )
     return _issue_tokens(db, user)
 
 
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = db.scalar(select(User).where(User.email == str(payload.email).lower()))
+    email = str(payload.email).lower()
+    user = db.scalar(select(User).where(User.email == email))
     if user is None or not verify_password(payload.password, user.password_hash):
+        record_auth_audit(
+            db,
+            action="login",
+            status="denied",
+            detail=f"email={email}",
+        )
+        db.commit()
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    record_auth_audit(
+        db,
+        action="login",
+        status="ok",
+        business_id=user.business_id,
+        user_id=user.id,
+    )
     return _issue_tokens(db, user)
 
 
@@ -87,19 +110,32 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
     token_hash = hash_refresh_token(payload.refresh_token)
     stored = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
     if stored is None or stored.revoked_at is not None:
+        record_auth_audit(db, action="refresh", status="denied", detail="invalid_token")
+        db.commit()
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     if stored.expires_at.tzinfo is None:
         expires_at = stored.expires_at.replace(tzinfo=UTC)
     else:
         expires_at = stored.expires_at
     if expires_at <= datetime.now(UTC):
+        record_auth_audit(db, action="refresh", status="denied", detail="expired")
+        db.commit()
         raise HTTPException(status_code=401, detail="Refresh token expired")
 
     user = db.get(User, stored.user_id)
     if user is None:
+        record_auth_audit(db, action="refresh", status="denied", detail="user_missing")
+        db.commit()
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     stored.revoked_at = datetime.now(UTC)
+    record_auth_audit(
+        db,
+        action="refresh",
+        status="ok",
+        business_id=user.business_id,
+        user_id=user.id,
+    )
     db.flush()
     return _issue_tokens(db, user)
 

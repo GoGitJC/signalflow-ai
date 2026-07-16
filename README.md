@@ -208,8 +208,8 @@ UI system documentation: [docs/ui.md](docs/ui.md).
 
 ## Security notes
 
-- This phase has **no login**. Tenant context is supplied in paths/queries; APIs still enforce tenant isolation on reads/writes.
-- Production must derive `business_id` from authenticated membership, not client trust.
+- JWT auth (`/api/auth/*`) plus legacy `X-Owner-Token` fallback protect tenant and integration admin routes. Prefer Bearer tokens in production.
+- Tenant `business_id` on protected routes must match the authenticated membership (or legacy owner header).
 - Webhook HMAC is enforced when the corresponding secret is configured.
 - Never commit `.env`, dumps, or provider credentials.
 
@@ -217,7 +217,8 @@ See [docs/security.md](docs/security.md) and [SECURITY.md](SECURITY.md).
 
 ## Known limitations
 
-- No authentication / RBAC enforcement yet (models include `User` / `UserRole`) — Phase 2.
+- Frontend login UI is not shipped yet; local dashboard still uses `VITE_OWNER_API_TOKEN` (JWT storage helpers are ready).
+- Multi-business memberships beyond a single `users.business_id` are planned.
 - Live Twilio HTTP client is not fully productionized; confirmation SMS is on the Final Production Acceptance Checklist.
 - Final live booking with valid customer data is a **release checklist** item (keep `ALLOW_LIVE_BOOKING=false` until then).
 - Pagination, async jobs, and full observability are planned later phases.

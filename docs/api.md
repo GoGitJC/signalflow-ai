@@ -55,6 +55,10 @@ Base URL defaults to `http://localhost:8000`. There is no global `/api` router p
 
 Integration admin routes accept `Authorization: Bearer <access_token>` (owner/admin). Legacy `X-Owner-Token` + `X-Business-Id` remain supported during migration.
 
+Tenant dashboard routes (calls, appointments, knowledge base, business get/patch) require the same auth via any membership role (`require_business_member`). `POST /api/businesses` requires bootstrap `X-Owner-Token` (prefer `/api/auth/register` for new tenants).
+
+Auth actions write to `auth_audit_events` (register/login/refresh).
+
 ## Integrations
 
 | Method | Path | Auth | Description |
