@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_owner_token
+from app.api.deps import require_business_admin
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.integrations.errors import ProviderError
@@ -37,7 +37,7 @@ settings = get_settings()
 
 @router.get("/retell/status", response_model=RetellStatusResponse)
 def retell_status(
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     return RetellStatusResponse(**retell_status_view(db, business_id))
@@ -46,7 +46,7 @@ def retell_status(
 @router.put("/retell", response_model=RetellStatusResponse)
 def upsert_retell(
     payload: RetellIntegrationUpsert,
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     existing = load_retell_credentials(db, business_id)
@@ -69,7 +69,7 @@ def upsert_retell(
 
 @router.post("/retell/test", response_model=ConnectionTestResponse)
 def retell_test(
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     try:
@@ -87,7 +87,7 @@ def retell_test(
 
 @router.get("/calcom/status", response_model=CalComStatusResponse)
 def calcom_status(
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     return CalComStatusResponse(**calcom_status_view(db, business_id))
@@ -96,7 +96,7 @@ def calcom_status(
 @router.put("/calcom", response_model=CalComStatusResponse)
 def upsert_calcom(
     payload: CalComIntegrationUpsert,
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     existing = load_calcom_credentials(db, business_id)
@@ -124,7 +124,7 @@ def upsert_calcom(
 
 @router.post("/calcom/test", response_model=ConnectionTestResponse)
 def calcom_test(
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     try:
@@ -143,7 +143,7 @@ def calcom_test(
 @router.post("/calcom/availability", response_model=AvailabilityResponse)
 def availability(
     payload: AvailabilityRequest,
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     # Prefer authenticated tenant; reject mismatched body business_id.
@@ -165,7 +165,7 @@ def availability(
 @router.post("/calcom/book", response_model=BookingResponse)
 def book(
     payload: BookingRequest,
-    business_id: str = Depends(require_owner_token),
+    business_id: str = Depends(require_business_admin),
     db: Session = Depends(get_db),
 ):
     if payload.business_id != business_id:

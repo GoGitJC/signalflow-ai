@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     calcom_event_types_api_version: str = Field(
         default="2024-06-14", validation_alias="CALCOM_EVENT_TYPES_API_VERSION"
     )
+    jwt_secret: str = Field(default="", repr=False, validation_alias="JWT_SECRET")
+    jwt_access_ttl_minutes: int = Field(default=30, validation_alias="JWT_ACCESS_TTL_MINUTES")
+    jwt_refresh_ttl_days: int = Field(default=14, validation_alias="JWT_REFRESH_TTL_DAYS")
 
     model_config = SettingsConfigDict(
         env_file=".env",

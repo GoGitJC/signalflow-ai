@@ -44,6 +44,17 @@ Base URL defaults to `http://localhost:8000`. There is no global `/api` router p
 | `POST` | `/api/appointments` | Create |
 | `PATCH` | `/api/appointments/{appointment_id}` | Update (`business_id` query required) |
 
+## Auth (Phase 2)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/auth/register` | Create business + owner user; returns JWT pair |
+| `POST` | `/api/auth/login` | Email/password → JWT pair |
+| `POST` | `/api/auth/refresh` | Rotate refresh token → new JWT pair |
+| `GET` | `/api/auth/me` | Current user (Bearer access token) |
+
+Integration admin routes accept `Authorization: Bearer <access_token>` (owner/admin). Legacy `X-Owner-Token` + `X-Business-Id` remain supported during migration.
+
 ## Integrations
 
 | Method | Path | Auth | Description |
