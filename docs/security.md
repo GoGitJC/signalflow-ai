@@ -12,13 +12,17 @@
 | Tenant dashboard APIs | Cookie/JWT session (any role) or legacy owner headers |
 | Auth audit | `auth_audit_events` for register/login/refresh/logout/reset/invite |
 | Dashboard tokens | HttpOnly cookies only — never `localStorage` |
-| Logging | Do not log API keys, webhook bodies, transcripts, or phone numbers |
+| Logging | Structured JSON + request IDs; redact secrets/PII (`app.core.logging`) |
+| Rate limiting | Auth + webhook/tool paths when `SIGNALFLOW_RATE_LIMIT_ENABLED=true` |
+| Security headers | nosniff, frame deny, referrer-policy, permissions-policy, baseline CSP |
+| Cookies | HttpOnly session cookies; production requires `AUTH_COOKIE_SECURE=true` |
+| CORS | Single configured `SIGNALFLOW_FRONTEND_ORIGIN` with credentials |
 
 ## Threats acknowledged
 
 1. **Client-supplied `business_id` on open routes** — Retell tool endpoints ignore caller-supplied business IDs.
 2. **Unsigned webhooks in mock mode** — acceptable only with `INTEGRATION_MODE=mock` and empty secrets.
-3. **Owner token in frontend env** — `VITE_OWNER_API_TOKEN` is for local admin only; use proper auth in production.
+3. **Legacy owner token** — `OWNER_API_TOKEN` / headers remain for CLI/bootstrap only; dashboard uses cookies.
 
 ## Credential rotation
 
@@ -41,11 +45,51 @@ See [integrations/retell.md](integrations/retell.md) — common causes:
 - Report exposure per [SECURITY.md](../SECURITY.md)
 - Run secret scan before commits
 
+## CORS audit
+
+- Allowlist is a single origin (`SIGNALFLOW_FRONTEND_ORIGIN`), not `*`.
+- `allow_credentials=True` requires exact origin match for cookie sessions.
+- Production startup rejects localhost origins.
+
+## Cookie configuration
+
+| Cookie | HttpOnly | Secure (prod) | SameSite |
+|--------|----------|---------------|----------|
+| `sf_access` | yes | required | lax (see `app.core.cookies`) |
+| `sf_refresh` | yes | required | lax |
+
+Never store JWTs in `localStorage`.
+
+## CSP recommendations
+
+Frontend nginx (`frontend/nginx.conf`) ships a baseline CSP. Tighten further per deploy:
+
+- `default-src 'self'`
+- `connect-src 'self' https://api.yourdomain.com`
+- `img-src 'self' data:`
+- Avoid `unsafe-inline` scripts once nonces are practical
+
+API responses also set a conservative CSP via `SecurityHeadersMiddleware`.
+
+## Dependency audit
+
+```bash
+cd backend && pip install -e ".[dev]" && pip-audit || true
+cd frontend && npm audit --omit=dev
+```
+
+Run in CI periodically; fix high/critical before go-live.
+
+## Secrets audit
+
+- `.env` gitignored; never commit provider keys
+- Encrypted integration credentials at rest
+- Production fail-fast on missing `JWT_SECRET` / encryption key
+- Demo passwords only in [demo-data.md](demo-data.md) for non-prod
+
 ## Recommended next controls
 
-- JWT/session auth with HttpOnly cookies (dashboard); legacy owner-token fallback for CLI/bootstrap only
-- Frontend login UI replacing `VITE_OWNER_API_TOKEN` — shipped
-- Multi-business memberships table beyond single `users.business_id`
+- Multi-business memberships beyond single `users.business_id`
+- Redis-backed rate limits for multi-instance
 - Mandatory webhook signatures in all non-dev environments
-- PII redaction middleware in structured logs
-- Rate limiting on webhooks and tool endpoints
+- External WAF in front of auth/webhooks (AWS/Cloudflare)

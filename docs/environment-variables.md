@@ -48,15 +48,26 @@ Legacy alias: `SIGNALFLOW_CALCOM_WEBHOOK_SECRET` for Cal.com webhook HMAC.
 | `SIGNALFLOW_TWILIO_ACCOUNT_SID` | empty | Reserved |
 | `SIGNALFLOW_TWILIO_AUTH_TOKEN` | empty | Reserved |
 
+## Ops / production readiness
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `LOG_JSON` | `true` | Structured JSON logs |
+| `RATE_LIMIT_ENABLED` | `true` | Auth/webhook rate limiting |
+| `JWT_SECRET` | empty | Required for cookie sessions; fail-fast in production |
+| `AUTH_COOKIE_SECURE` | `false` | Must be `true` in production |
+
+Production (`SIGNALFLOW_ENVIRONMENT=production`) also requires encryption key, non-localhost `SIGNALFLOW_FRONTEND_ORIGIN`, and secure cookies.
+
 ## Frontend (VITE_ prefix)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `VITE_API_URL` | `http://localhost:8000` | API base URL |
-| `VITE_BUSINESS_ID` | empty | Dashboard tenant ID |
-| `VITE_OWNER_API_TOKEN` | empty | Sent as `X-Owner-Token` for Settings integration cards |
+| `VITE_BUSINESS_ID` | empty | Optional default tenant hint for local/demo |
 
-API keys are **not** stored in browser local storage.
+Dashboard auth uses HttpOnly cookies — do not put JWTs or owner tokens in frontend env.
 
 ## Live mode startup
 

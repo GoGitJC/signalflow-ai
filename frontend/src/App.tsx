@@ -18,6 +18,7 @@ import { KnowledgePage } from "@/pages/KnowledgePage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { VoiceAgentPage } from "@/pages/VoiceAgentPage";
+import { OnboardingPage } from "@/pages/OnboardingPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
@@ -40,6 +41,7 @@ const pathToPage: Record<string, PageId> = {
   "/analytics": "analytics",
   "/settings": "settings",
   "/help": "help",
+  "/onboarding": "settings",
 };
 
 export default function App() {
@@ -207,6 +209,7 @@ function AppShell() {
                     }
                   />
                   <Route path="/settings" element={<SettingsPage businessId={data.businessId} />} />
+                  <Route path="/onboarding" element={<OnboardingPage />} />
                   <Route path="/help" element={<HelpPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

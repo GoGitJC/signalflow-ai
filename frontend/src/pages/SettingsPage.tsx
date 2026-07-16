@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   api,
   getBusinessId,
@@ -155,6 +156,12 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
         title="Settings"
         description="Business profile, transfer numbers, and provider configuration for this workspace."
       />
+      <p className="text-sm text-muted-foreground">
+        New workspace?{" "}
+        <Link className="text-primary underline-offset-4 hover:underline" to="/onboarding">
+          Open first-run setup
+        </Link>
+      </p>
 
       <Tabs defaultValue="business">
         <TabsList>

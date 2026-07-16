@@ -1,47 +1,98 @@
 # Deployment
 
-## Current packaging
+## Packaging
 
 | Artifact | File | Purpose |
 |----------|------|---------|
-| Compose stack | `docker-compose.yml` | Local multi-service run |
-| API image | `backend/Dockerfile` | `pip install .` + migrate + uvicorn |
-| UI image | `frontend/Dockerfile` | `npm ci` + Vite **dev** server (local) |
+| Compose stack | `docker-compose.yml` | Local multi-service (Postgres + API + Vite) |
+| API image | `backend/Dockerfile` | Targets: `production` (default for Compose backend), `development` (tests) |
+| UI image | `frontend/Dockerfile` | Targets: `production` (nginx SPA), `development` (Vite), `build` |
+| CI | `.github/workflows/ci.yml` | Ruff, mypy, pytest, frontend typecheck/build, Docker builds |
 
-Backend container entrypoint:
+Backend entrypoint:
 
 ```text
 alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-## Recommended production shape
+Frontend production image serves `dist/` via nginx (`frontend/nginx.conf`) with baseline security headers/CSP.
 
-1. **Managed PostgreSQL** with automated backups and TLS to the app.
-2. **API** on a container platform (Render, Railway, Fly.io, ECS, or DigitalOcean App Platform) using a production image that runs `uvicorn` (or gunicorn+uvicorn workers) behind HTTPS.
-3. **Frontend** built with `npm run build` and served via CDN / static hosting (or nginx), with `VITE_API_URL` pointed at the public API.
-4. **Secrets** injected by the platform — never bake `.env` into images.
-5. **Webhook URLs** registered with Retell/Cal.com pointing at the public API.
+## Local production image check
 
-## Environment (production)
+```bash
+docker compose up --build -d
+curl -sS http://localhost:8000/health
+curl -sS http://localhost:8000/live
+curl -sS http://localhost:8000/ready
+docker build --target production -t signalflow-frontend:prod ./frontend
+```
 
-- Set `SIGNALFLOW_ENVIRONMENT=production`
-- Set `SIGNALFLOW_MOCK_EXTERNAL_SERVICES=false` only after live clients exist
-- Configure `SIGNALFLOW_FRONTEND_ORIGIN` to the dashboard origin
-- Provide webhook secrets and (when ready) Twilio credentials
-- Provide `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY` before storing provider credentials
+## Production configuration
 
-## Migrations in production
+Fail-fast when `SIGNALFLOW_ENVIRONMENT=production|prod`:
 
-Run Alembic as a release step before or at container start (Compose already does upgrade-on-start). Prefer a dedicated migrate job in CI/CD for larger environments.
+- `JWT_SECRET`
+- `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY`
+- `SIGNALFLOW_FRONTEND_ORIGIN` (non-localhost)
+- `AUTH_COOKIE_SECURE=true`
+- Live mode: Retell signature material; Cal.com webhook secret when Cal.com key present
+
+Also set:
+
+- Managed `SIGNALFLOW_DATABASE_URL`
+- `APP_PUBLIC_API_URL` for webhook registration
+- `LOG_JSON=true`, `LOG_LEVEL=INFO`
+- `RATE_LIMIT_ENABLED=true`
+- Keep `ALLOW_LIVE_BOOKING=false` until final acceptance
+
+## Platform guides
+
+### Render
+
+1. Create **PostgreSQL** instance; copy internal URL into `SIGNALFLOW_DATABASE_URL` (psycopg form: `postgresql+psycopg://…`).
+2. **Web service** from repo: Dockerfile path `backend/Dockerfile`, Docker context `backend`.
+3. Set env vars (secrets in Render dashboard). Health check path: `/ready`.
+4. Static site or second service for frontend: build `frontend` with `VITE_API_URL=https://api.example.com`, or deploy nginx production image.
+5. Point custom domains + TLS; set `SIGNALFLOW_FRONTEND_ORIGIN` to the dashboard origin.
+
+### Railway
+
+1. Add Postgres plugin.
+2. Deploy backend service from `backend/` Dockerfile; inject env from Railway variables.
+3. Healthcheck `/ready`.
+4. Deploy frontend as static or Docker `production` target with build arg `VITE_API_URL`.
+5. Enable public HTTPS domains; update CORS origin and webhook URLs.
+
+### DigitalOcean App Platform
+
+1. Create app with Dockerfile component for backend (`backend/Dockerfile`).
+2. Attach Managed Database (Postgres 16).
+3. Configure env / secrets; HTTP health check `/ready`.
+4. Static site component for frontend build, or container with nginx production stage.
+5. Spaces optional for future media; not required for MVP.
+
+### AWS (recommended shape)
+
+1. **RDS PostgreSQL 16** with automated backups + Multi-AZ for first paying customer.
+2. **ECS Fargate** (or App Runner) running backend production image; ALB health checks on `/ready`.
+3. **Secrets Manager** / SSM for `JWT_SECRET`, encryption key, provider keys.
+4. **CloudFront + S3** (or Amplify) for frontend `npm run build` artifacts.
+5. **WAF** rate rules in front of `/api/auth` and `/api/webhooks` (complements in-app limiter).
+6. **CloudWatch** scrape or sidecar for `/metrics`; alarms on 5xx and unhealthy targets.
+7. Optional: Route 53 + ACM certificates.
+
+## Migrations
+
+Prefer a dedicated migrate step in CD before shifting traffic. Compose uses upgrade-on-start for local/dev.
 
 ## Rollback
 
 1. Redeploy previous application image.
-2. If schema changed, `alembic downgrade` to the prior revision only after verifying data safety.
-3. Keep database backups prior to every migration.
+2. If schema changed: restore from backup or carefully `alembic downgrade` after verifying data safety ([operations.md](operations.md)).
+3. Confirm `/ready` and auth cookie login.
 
 ## CI builds
 
-GitHub Actions builds backend and frontend Docker images on pull requests (`.github/workflows/ci.yml`).
+GitHub Actions on `main` PRs/pushes: backend quality, frontend typecheck/build, Docker backend + frontend production/development images.
 
-See also [production-readiness.md](production-readiness.md).
+See [production-readiness.md](production-readiness.md), [operations.md](operations.md), [monitoring.md](monitoring.md).

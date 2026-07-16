@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     )
     auth_access_cookie_name: str = "sf_access"
     auth_refresh_cookie_name: str = "sf_refresh"
+    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
+    log_json: bool = Field(default=True, validation_alias="LOG_JSON")
+    rate_limit_enabled: bool = Field(default=True, validation_alias="RATE_LIMIT_ENABLED")
 
     model_config = SettingsConfigDict(
         env_file=".env",

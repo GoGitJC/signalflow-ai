@@ -36,7 +36,7 @@ export function RegisterPage() {
         password,
         remember_me: rememberMe,
       });
-      navigate("/verify-email", { replace: true });
+      navigate("/onboarding", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to register");
     } finally {

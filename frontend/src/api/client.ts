@@ -69,10 +69,13 @@ async function request<T>(path: string, options?: RequestOptions): Promise<T> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: response.statusText }));
-    const error = new Error(
-      typeof body.detail === "string" ? body.detail : response.statusText,
-    ) as Error & { status?: number };
+    const message =
+      (typeof body?.error?.message === "string" && body.error.message) ||
+      (typeof body.detail === "string" && body.detail) ||
+      response.statusText;
+    const error = new Error(message) as Error & { status?: number; requestId?: string };
     error.status = response.status;
+    if (typeof body?.error?.request_id === "string") error.requestId = body.error.request_id;
     throw error;
   }
   if (response.status === 204) return undefined as T;

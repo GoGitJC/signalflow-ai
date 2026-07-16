@@ -47,6 +47,9 @@ cp .env.example .env
 |---------|-----|
 | API + OpenAPI | http://localhost:8000/docs |
 | Health | http://localhost:8000/health |
+| Ready | http://localhost:8000/ready |
+| Live | http://localhost:8000/live |
+| Metrics | http://localhost:8000/metrics |
 | Dashboard | http://localhost:5173 |
 
 Create a business and wire the dashboard:
@@ -79,6 +82,8 @@ Copy `.env.example` → `.env`. Never commit `.env`.
 | `APP_PUBLIC_API_URL` | Public API URL for webhook registration |
 | `OWNER_API_TOKEN` | Optional bootstrap/CLI owner token (dashboard uses cookies) |
 | `JWT_SECRET` | Required for cookie/JWT sessions |
+| `LOG_LEVEL` / `LOG_JSON` | Logging level and JSON format |
+| `RATE_LIMIT_ENABLED` | Auth/webhook rate limiting |
 | `RETELL_API_KEY`, `RETELL_AGENT_ID`, `RETELL_AGENT_NAME` | Retell live credentials |
 | `CALCOM_API_KEY`, `CALCOM_EVENT_TYPE_ID`, `CALCOM_EVENT_TYPE_SLUG`, `CALCOM_USERNAME` | Cal.com live credentials |
 | `SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY` | Fernet key for encrypted integration secrets |
@@ -146,6 +151,8 @@ docker compose down -v
 docker compose up --build -d
 docker compose ps
 curl -i http://localhost:8000/health
+curl -i http://localhost:8000/live
+curl -i http://localhost:8000/ready
 docker compose run --rm backend-test ruff check .
 docker compose run --rm backend-test ruff format --check .
 docker compose run --rm backend-test mypy .
@@ -223,21 +230,11 @@ See [docs/security.md](docs/security.md), [docs/auth.md](docs/auth.md), and [SEC
 - Multi-business memberships beyond a single `users.business_id` are planned.
 - Live Twilio HTTP client is not fully productionized; confirmation SMS is on the Final Production Acceptance Checklist.
 - Final live booking with valid customer data is a **release checklist** item (keep `ALLOW_LIVE_BOOKING=false` until then).
-- Pagination, async jobs, and full observability are planned later phases.
+- Pagination and heavy async job queues remain future work; baseline metrics/logging/rate limits are in place.
 
 ## Roadmap
 
-Tracked in [PHASES.md](PHASES.md):
-
-1. Foundation + simulated completed-call flow — done
-2. **Authentication and tenant authorization** — next
-3. Provider integration architecture — largely complete for Retell/Cal.com (live-ready path on `feature/live-retell-calcom-flow`)
-4. Receptionist orchestration
-5. Production dashboard
-6. Async processing and observability
-7. Deployment and operations
-
-Provider live-readiness notes: [docs/integrations/live-acceptance-2026-07-16.md](docs/integrations/live-acceptance-2026-07-16.md).
+Tracked in [PHASES.md](PHASES.md). Core product + Phase 5 production readiness are the current focus for first-customer launch. Keep `ALLOW_LIVE_BOOKING=false` until Final Production Acceptance.
 
 ## Documentation index
 
@@ -245,10 +242,16 @@ Provider live-readiness notes: [docs/integrations/live-acceptance-2026-07-16.md]
 |-----|-------------|
 | [Architecture](docs/architecture.md) | System design |
 | [Local development](docs/local-development.md) | Day-to-day setup |
-| [Deployment](docs/deployment.md) | Containers and hosting |
+| [Deployment](docs/deployment.md) | Containers and hosting (Render/Railway/DO/AWS) |
+| [Operations](docs/operations.md) | Backups, restore, probes, rate limits |
+| [Monitoring](docs/monitoring.md) | Metrics and alerts |
+| [Onboarding](docs/onboarding.md) | First-run customer setup |
+| [Demo data](docs/demo-data.md) | Seed CLI for demos |
 | [Environment variables](docs/environment-variables.md) | Config reference |
 | [API](docs/api.md) | HTTP surface |
 | [Database](docs/database.md) | Schema and migrations |
+| [Auth](docs/auth.md) | Sessions and roles |
+| [Security](docs/security.md) | CORS, cookies, CSP, secrets |
 | [Testing](docs/testing.md) | Test and CI commands |
 | [Troubleshooting](docs/troubleshooting.md) | Common failures |
 | [Production readiness](docs/production-readiness.md) | Go-live checklist |

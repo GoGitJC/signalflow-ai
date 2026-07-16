@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Phase 5 production readiness: structured JSON logging + request IDs, unified API error schema, rate limits on auth/webhooks, `/health` `/live` `/ready` `/metrics`, production config fail-fast, demo seed CLI, first-run onboarding wizard.
+- Frontend production Docker image (nginx + CSP) alongside Vite development target.
+- Ops docs: `docs/operations.md`, `docs/monitoring.md`, `docs/onboarding.md`, `docs/demo-data.md`; expanded deployment (Render/Railway/DO/AWS).
 - Cookie-based auth UX: HttpOnly `sf_access`/`sf_refresh` sessions, login/register/forgot/reset/verify/invite flows, `AuthProvider`, protected routes, Settings users/invitations.
 - Migration `0007_auth_sessions` — email verification timestamp, password reset tokens, invitations.
 - Auth guide: `docs/auth.md`.
@@ -34,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Changed
 
+- CI builds frontend `production` and `development` Docker targets.
 - Dashboard authentication no longer uses `localStorage` JWTs or `VITE_OWNER_API_TOKEN`; sessions use HttpOnly cookies with automatic refresh.
 - Dashboard pages upgraded for daily CRM use: Customers, Calls (transcript/timeline/AI actions), Appointments filters, Analytics executive metrics, Voice Agent API config, Knowledge versions/bulk, Settings audit log.
 - Documentation treats Retell/Cal.com availability/webhooks/dashboard as engineering-complete; final booking validation is release checklist only.

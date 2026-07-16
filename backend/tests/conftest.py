@@ -10,6 +10,8 @@ os.environ["INTEGRATION_MODE"] = "mock"
 os.environ["SIGNALFLOW_MOCK_EXTERNAL_SERVICES"] = "true"
 os.environ["OWNER_API_TOKEN"] = "test-owner-token"
 os.environ["JWT_SECRET"] = "test-jwt-secret-not-for-production"
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+os.environ["LOG_JSON"] = "false"
 os.environ["SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 os.environ["SIGNALFLOW_RETELL_WEBHOOK_SECRET"] = "test-webhook-secret"
 
