@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.router import api_router
 from app.core.config import get_settings
@@ -33,17 +34,20 @@ async def lifespan(_: FastAPI):
         logger.error("startup_validation_failed detail=%s", str(exc))
         raise
     logger.info(
-        "startup environment=%s integration_mode=%s",
+        "startup environment=%s integration_mode=%s cors_origins=%s",
         settings.environment,
         settings.integration_mode,
+        settings.cors_origin_list,
     )
     yield
 
 
-app = FastAPI(title=settings.app_name, version="0.2.0", lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="1.0.0-beta", lifespan=lifespan)
+if settings.trusted_host_list:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_host_list)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_origin],
+    allow_origins=settings.cors_origin_list or [settings.frontend_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
