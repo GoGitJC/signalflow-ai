@@ -141,8 +141,17 @@ def calcom_test(
 
 
 @router.post("/calcom/availability", response_model=AvailabilityResponse)
-def availability(payload: AvailabilityRequest, db: Session = Depends(get_db)):
-    creds = load_calcom_credentials(db, payload.business_id)
+def availability(
+    payload: AvailabilityRequest,
+    business_id: str = Depends(require_owner_token),
+    db: Session = Depends(get_db),
+):
+    # Prefer authenticated tenant; reject mismatched body business_id.
+    if payload.business_id != business_id:
+        raise HTTPException(
+            status_code=403, detail="business_id does not match authenticated tenant"
+        )
+    creds = load_calcom_credentials(db, business_id)
     provider = get_scheduling_provider(
         api_key=creds.get("api_key"),
         event_type_id=creds.get("event_type_id") or payload.event_type_id,
@@ -154,8 +163,16 @@ def availability(payload: AvailabilityRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/calcom/book", response_model=BookingResponse)
-def book(payload: BookingRequest, db: Session = Depends(get_db)):
-    creds = load_calcom_credentials(db, payload.business_id)
+def book(
+    payload: BookingRequest,
+    business_id: str = Depends(require_owner_token),
+    db: Session = Depends(get_db),
+):
+    if payload.business_id != business_id:
+        raise HTTPException(
+            status_code=403, detail="business_id does not match authenticated tenant"
+        )
+    creds = load_calcom_credentials(db, business_id)
     if not payload.event_type_id:
         payload = payload.model_copy(update={"event_type_id": creds.get("event_type_id")})
     appointment, result = book_appointment_transactional(db, payload)

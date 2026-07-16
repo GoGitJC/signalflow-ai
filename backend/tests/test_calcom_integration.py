@@ -134,18 +134,19 @@ def test_duplicate_booking_protection(client, business_with_agent):
         "phone": "+12105550101",
         "service": "Exam",
     }
-    first = client.post("/api/integrations/calcom/book", json=payload)
-    second = client.post("/api/integrations/calcom/book", json=payload)
+    first = client.post("/api/integrations/calcom/book", headers=headers, json=payload)
+    second = client.post("/api/integrations/calcom/book", headers=headers, json=payload)
     assert first.status_code == 200
     assert second.status_code == 200
     assert second.json()["duplicate"] is True
 
 
 def test_calcom_webhook_status_update(client, business_with_agent):
-    business, _ = business_with_agent
+    business, headers = business_with_agent
     start = datetime.now(UTC).replace(microsecond=0) + timedelta(days=3)
     booked = client.post(
         "/api/integrations/calcom/book",
+        headers=headers,
         json={
             "business_id": business["id"],
             "start": start.isoformat(),
@@ -164,11 +165,12 @@ def test_calcom_webhook_status_update(client, business_with_agent):
 
 
 def test_cross_tenant_calcom_booking_denied(client, business_with_agent):
-    business, _ = business_with_agent
+    business, headers = business_with_agent
     other = client.post("/api/businesses", json={"name": "Other Biz"}).json()
     start = datetime.now(UTC) + timedelta(days=4)
     booked = client.post(
         "/api/integrations/calcom/book",
+        headers=headers,
         json={
             "business_id": business["id"],
             "start": start.isoformat(),

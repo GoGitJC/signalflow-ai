@@ -53,6 +53,8 @@ PY
 echo "== live availability (read-only) =="
 AVAIL=$(curl -sf -X POST "$API/api/integrations/calcom/availability" \
   -H 'Content-Type: application/json' \
+  -H "X-Owner-Token: $OWNER_TOKEN" \
+  -H "X-Business-Id: $BUSINESS_ID" \
   -d "{\"business_id\":\"$BUSINESS_ID\",\"start\":\"$START_ISO\",\"end\":\"$END_ISO\"}")
 python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print("slots=%s mocked=%s" % (len(d.get("slots", [])), d.get("mocked")))' "$AVAIL"
 

@@ -126,11 +126,36 @@ def test_no_availability_voice_response(client, business_with_agent):
     assert response.json()["options"] == []
 
 
+def test_retell_custom_function_envelope_unwraps_args(client, business_with_agent):
+    _, _ = business_with_agent
+    start = datetime.now(UTC) + timedelta(days=5)
+    response = client.post(
+        "/api/retell/tools/check_availability",
+        json={
+            "call": {
+                "call_id": "call_envelope_test",
+                "agent_id": "agent-universal-demo",
+            },
+            "name": "check_availability",
+            "args": {
+                "start": start.isoformat(),
+                "end": (start + timedelta(days=1)).isoformat(),
+                "timezone": "America/Chicago",
+                "max_options": 3,
+            },
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["available"] is True
+    assert response.json()["options"]
+
+
 def test_calcom_availability_success_and_invalid_event_type(client, business_with_agent):
-    business, _ = business_with_agent
+    business, headers = business_with_agent
     start = datetime.now(UTC) + timedelta(days=9)
     ok = client.post(
         "/api/integrations/calcom/availability",
+        headers=headers,
         json={
             "business_id": business["id"],
             "start": start.isoformat(),
@@ -149,7 +174,7 @@ def test_calcom_availability_success_and_invalid_event_type(client, business_wit
 
 
 def test_booking_conflict_and_duplicate(client, business_with_agent):
-    business, _ = business_with_agent
+    business, headers = business_with_agent
     start = (datetime.now(UTC) + timedelta(days=10)).replace(microsecond=0)
     payload = {
         "business_id": business["id"],
@@ -158,8 +183,8 @@ def test_booking_conflict_and_duplicate(client, business_with_agent):
         "email": "pat@example.com",
         "service": "Cleaning",
     }
-    first = client.post("/api/integrations/calcom/book", json=payload)
-    second = client.post("/api/integrations/calcom/book", json=payload)
+    first = client.post("/api/integrations/calcom/book", headers=headers, json=payload)
+    second = client.post("/api/integrations/calcom/book", headers=headers, json=payload)
     assert first.status_code == 200
     assert second.status_code == 200
     assert second.json()["duplicate"] is True
@@ -168,9 +193,51 @@ def test_booking_conflict_and_duplicate(client, business_with_agent):
         mock_provider.return_value.book.side_effect = ProviderConflictError("taken")
         conflict = client.post(
             "/api/integrations/calcom/book",
+            headers=headers,
             json={**payload, "start": (start + timedelta(hours=2)).isoformat()},
         )
     assert conflict.status_code == 409
+
+
+def test_live_booking_gate_blocks_when_disabled(client, business_with_agent, monkeypatch):
+    business, headers = business_with_agent
+    monkeypatch.setenv("INTEGRATION_MODE", "live")
+    monkeypatch.setenv("SIGNALFLOW_MOCK_EXTERNAL_SERVICES", "false")
+    monkeypatch.setenv("ALLOW_LIVE_BOOKING", "false")
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+    start = (datetime.now(UTC) + timedelta(days=11)).replace(microsecond=0)
+    response = client.post(
+        "/api/integrations/calcom/book",
+        headers=headers,
+        json={
+            "business_id": business["id"],
+            "start": start.isoformat(),
+            "name": "Gate",
+            "email": "gate@example.com",
+            "service": "Exam",
+        },
+    )
+    get_settings.cache_clear()
+    assert response.status_code == 403
+    assert "ALLOW_LIVE_BOOKING" in response.json()["detail"]
+
+
+def test_calcom_routes_reject_cross_tenant_header(client, business_with_agent):
+    business, headers = business_with_agent
+    other = client.post("/api/businesses", json={"name": "Other"}).json()
+    start = datetime.now(UTC) + timedelta(days=12)
+    denied = client.post(
+        "/api/integrations/calcom/availability",
+        headers=headers,
+        json={
+            "business_id": other["id"],
+            "start": start.isoformat(),
+            "end": (start + timedelta(days=1)).isoformat(),
+        },
+    )
+    assert denied.status_code == 403
 
 
 def test_provider_timeout_maps_and_invalid_signature(monkeypatch):

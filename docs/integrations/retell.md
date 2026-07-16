@@ -131,6 +131,10 @@ BUSINESS_ID=<uuid> ./scripts/simulate_call.sh
 `check_availability` returns voice-friendly `options` with `option_id` + `spoken_summary`.
 `book_appointment` requires `caller_confirmed=true` and resolves business from `retell_agent_id` only.
 
+Retell custom functions POST an envelope `{ "call": {...}, "name": "...", "args": {...} }`.
+These endpoints unwrap `args` (and fall back to `call.agent_id` / `call.call_id` when needed).
+Flat JSON bodies are still accepted for local tests and scripts.
+
 Do not configure these as live Retell custom functions until the public webhook/tool base URL is approved.
 
 ## Persist mapping

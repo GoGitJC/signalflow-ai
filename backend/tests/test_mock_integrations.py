@@ -1,11 +1,12 @@
 from datetime import UTC, datetime, timedelta
 
 
-def test_mock_availability_and_sms(client):
-    business = client.post("/api/businesses", json={"name": "Demo"}).json()
+def test_mock_availability_and_sms(client, business_with_agent):
+    business, headers = business_with_agent
     start = datetime.now(UTC).replace(microsecond=0)
     availability = client.post(
         "/api/integrations/calcom/availability",
+        headers=headers,
         json={
             "business_id": business["id"],
             "event_type_id": "30-min",

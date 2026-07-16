@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Retell custom-function envelope unwrap (`{call, name, args}`) for live tool POSTs.
+- `ALLOW_LIVE_BOOKING` pytest coverage and cross-tenant denial on Cal.com owner routes.
 - Live-ready Retell ↔ Cal.com flow: voice-friendly tool schemas, booking confirmation gate, call linkage.
 - `ALLOW_LIVE_BOOKING` guard (default false) to prevent accidental paid Cal.com bookings.
 - `CALCOM_EVENT_TYPES_API_VERSION` (default `2024-06-14`) for event-type endpoints.
@@ -19,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Changed
 
+- `POST /api/integrations/calcom/availability` and `/book` require owner auth (`X-Owner-Token`, `X-Business-Id`) and reject mismatched body `business_id`.
+- `INTEGRATION_MODE` replaces mock-only 501 behavior; mock adapters preserved for tests.
+- Retell webhooks resolve `business_id` from `voice_agents.retell_agent_id` when using official payload format.
+- `.env.example` documents Retell, Cal.com, owner token, and public API URL variables.
 - Retell tool responses return spoken summaries and `option_id` values for agent booking.
 - Connection tests persist `last_test_*` fields for both mock and live modes.
 - Integration settings API: Retell/Cal.com status, credential upsert, connection tests.
@@ -30,16 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 - Frontend Settings integration cards (masked IDs, test connection, password inputs).
 - Tests: Retell/Cal.com provider mocks, signatures, cross-tenant denial, E2E mocked flow.
 
-### Changed
-
-- `INTEGRATION_MODE` replaces mock-only 501 behavior; mock adapters preserved for tests.
-- Retell webhooks resolve `business_id` from `voice_agents.retell_agent_id` when using official payload format.
-- `.env.example` documents Retell, Cal.com, owner token, and public API URL variables.
-
 ### Security
 
 - Live Retell webhooks require `X-Retell-Signature` verified with API key.
-- Integration admin routes require `X-Owner-Token`; API keys never returned to frontend.
+- Integration admin and Cal.com scheduling routes require `X-Owner-Token`; API keys never returned to frontend.
 
 ### Added (prior)
 

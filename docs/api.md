@@ -44,15 +44,30 @@ Base URL defaults to `http://localhost:8000`. There is no global `/api` router p
 | `POST` | `/api/appointments` | Create |
 | `PATCH` | `/api/appointments/{appointment_id}` | Update (`business_id` query required) |
 
-## Integrations (mock mode)
+## Integrations
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/integrations/retell/status` | Owner | Masked Retell status |
+| `PUT` | `/api/integrations/retell` | Owner | Upsert Retell credentials |
+| `POST` | `/api/integrations/retell/test` | Owner | Connection test |
+| `GET` | `/api/integrations/calcom/status` | Owner | Masked Cal.com status |
+| `PUT` | `/api/integrations/calcom` | Owner | Upsert Cal.com credentials |
+| `POST` | `/api/integrations/calcom/test` | Owner | Connection test |
+| `POST` | `/api/integrations/calcom/availability` | Owner | Slot list |
+| `POST` | `/api/integrations/calcom/book` | Owner | Book appointment slot |
+| `POST` | `/api/integrations/twilio/send-summary` | — | Send SMS summary |
+
+Owner routes require `X-Owner-Token` and `X-Business-Id`. Live Cal.com booking also requires `ALLOW_LIVE_BOOKING=true`.
+
+## Retell voice tools
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/integrations/calcom/availability` | Slot list |
-| `POST` | `/api/integrations/calcom/book` | Book appointment slot |
-| `POST` | `/api/integrations/twilio/send-summary` | Send SMS summary |
+| `POST` | `/api/retell/tools/check_availability` | Voice-friendly slots via agent → business mapping |
+| `POST` | `/api/retell/tools/book_appointment` | Book after `caller_confirmed=true` |
 
-When mocks are disabled, these return **501**.
+Accepts either a flat JSON body or Retell's `{ "call", "name", "args" }` envelope.
 
 ## Webhooks
 

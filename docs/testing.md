@@ -25,6 +25,7 @@ pytest
 | `test_retell_webhook.py` | Call-ended flow, idempotency, tenant scope |
 | `test_retell_integration.py` | Agent resolution, signatures, connection test, cross-tenant |
 | `test_calcom_integration.py` | Event type resolution, slots, booking, webhooks, duplicates |
+| `test_live_flow.py` | Tool schemas, envelope unwrap, confirmation gate, live booking guard, tenants |
 | `test_e2e_integration_flow.py` | Mocked call → availability → book → dashboard |
 | `test_mock_integrations.py` | Legacy mock Cal.com/Twilio routes |
 

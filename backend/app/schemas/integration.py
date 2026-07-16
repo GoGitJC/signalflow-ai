@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class AvailabilityRequest(BaseModel):
@@ -101,12 +102,34 @@ class VoiceFriendlySlot(BaseModel):
     timezone: str
 
 
+def unwrap_retell_tool_payload(data: Any) -> Any:
+    """Retell custom functions POST {call, name, args}; accept flat args too."""
+    if not isinstance(data, dict):
+        return data
+    args = data.get("args")
+    if not isinstance(args, dict):
+        return data
+    payload = dict(args)
+    raw_call = data.get("call")
+    call: dict[str, Any] = raw_call if isinstance(raw_call, dict) else {}
+    if not payload.get("retell_agent_id") and call.get("agent_id"):
+        payload["retell_agent_id"] = call["agent_id"]
+    if not payload.get("retell_call_id") and call.get("call_id"):
+        payload["retell_call_id"] = call["call_id"]
+    return payload
+
+
 class RetellToolAvailabilityRequest(BaseModel):
     retell_agent_id: str = Field(min_length=1)
     start: datetime
     end: datetime
     timezone: str | None = Field(default="America/Chicago")
     max_options: int = Field(default=5, ge=1, le=10)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _unwrap_retell_envelope(cls, data: Any) -> Any:
+        return unwrap_retell_tool_payload(data)
 
 
 class RetellToolAvailabilityResponse(BaseModel):
@@ -134,6 +157,11 @@ class RetellToolBookingRequest(BaseModel):
     retell_call_id: str | None = Field(
         default=None, description="Optional Retell call ID to link the appointment"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _unwrap_retell_envelope(cls, data: Any) -> Any:
+        return unwrap_retell_tool_payload(data)
 
 
 class RetellToolBookingResponse(BaseModel):

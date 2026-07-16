@@ -20,7 +20,7 @@ This repository is the production-oriented MVP foundation: FastAPI + PostgreSQL 
 
 - **Backend** (`backend/`): FastAPI app, SQLAlchemy models, Alembic migrations, webhook processing, tenant-scoped APIs.
 - **Frontend** (`frontend/`): Vite + React + TypeScript dashboard (overview, calls, appointments, knowledge base, settings).
-- **Integrations**: Mock providers by default (`SIGNALFLOW_MOCK_EXTERNAL_SERVICES=true`). Live clients are phased for later work.
+- **Integrations**: Mock providers by default (`INTEGRATION_MODE=mock`). Live Retell/Cal.com clients are supported when `INTEGRATION_MODE=live`; real Cal.com bookings stay gated by `ALLOW_LIVE_BOOKING=false` until explicitly enabled.
 - **Data**: PostgreSQL 16 with enum-backed domain types (`userrole`, `integrationprovider`).
 
 See [docs/architecture.md](docs/architecture.md) for deeper detail.

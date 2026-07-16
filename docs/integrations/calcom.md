@@ -37,13 +37,17 @@ Headers: `X-Owner-Token`, `X-Business-Id`
 | `GET` | `/api/integrations/calcom/status` |
 | `PUT` | `/api/integrations/calcom` |
 | `POST` | `/api/integrations/calcom/test` |
+| `POST` | `/api/integrations/calcom/availability` |
+| `POST` | `/api/integrations/calcom/book` |
 
 ## Scheduling API
+
+`availability` and `book` require the same owner headers. Body `business_id` must match `X-Business-Id`.
 
 | Method | Path | Mode |
 |--------|------|------|
 | `POST` | `/api/integrations/calcom/availability` | mock + live |
-| `POST` | `/api/integrations/calcom/book` | mock + live |
+| `POST` | `/api/integrations/calcom/book` | mock + live (`ALLOW_LIVE_BOOKING=true`) |
 
 Live booking uses `POST /v2/bookings` with:
 
@@ -67,6 +71,8 @@ When `SIGNALFLOW_CALCOM_WEBHOOK_SECRET` is set, HMAC-SHA256 of the raw body is r
 ```bash
 curl -X POST http://localhost:8000/api/integrations/calcom/availability \
   -H "Content-Type: application/json" \
+  -H "X-Owner-Token: $OWNER_API_TOKEN" \
+  -H "X-Business-Id: $VITE_BUSINESS_ID" \
   -d '{
     "business_id": "<uuid>",
     "start": "2026-08-01T00:00:00Z",
