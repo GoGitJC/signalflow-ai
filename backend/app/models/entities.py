@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -136,7 +137,12 @@ class VoiceAgent(Base):
     retell_agent_name: Mapped[str | None] = mapped_column(String(200))
     greeting: Mapped[str] = mapped_column(Text)
     system_prompt: Mapped[str] = mapped_column(Text)
+    voice: Mapped[str | None] = mapped_column(String(80))
+    temperature: Mapped[float | None] = mapped_column(Float)
+    transfer_number: Mapped[str | None] = mapped_column(String(32))
+    transfer_rules: Mapped[str | None] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=utcnow)
 
 
 class KnowledgeBaseEntry(Base):
@@ -150,6 +156,26 @@ class KnowledgeBaseEntry(Base):
     question: Mapped[str] = mapped_column(Text)
     answer: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=utcnow)
+
+
+class KnowledgeBaseEntryVersion(Base):
+    __tablename__ = "knowledge_base_entry_versions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    entry_id: Mapped[str] = mapped_column(
+        ForeignKey("knowledge_base_entries.id", ondelete="CASCADE"), index=True
+    )
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    category: Mapped[str] = mapped_column(String(120))
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class Caller(Base):
@@ -163,7 +189,11 @@ class Caller(Base):
     name: Mapped[str | None] = mapped_column(String(200))
     phone: Mapped[str] = mapped_column(String(32))
     email: Mapped[str | None] = mapped_column(String(320))
+    notes: Mapped[str | None] = mapped_column(Text)
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(40), default="lead")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=utcnow)
 
 
 class Call(Base):
@@ -187,6 +217,7 @@ class Call(Base):
     intent: Mapped[str | None] = mapped_column(String(120))
     urgency: Mapped[str | None] = mapped_column(String(40))
     outcome: Mapped[str | None] = mapped_column(String(80))
+    sentiment: Mapped[str | None] = mapped_column(String(40))
     recording_url: Mapped[str | None] = mapped_column(Text)
     appointment_booked: Mapped[bool] = mapped_column(Boolean, default=False)
 

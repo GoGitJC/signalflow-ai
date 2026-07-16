@@ -43,11 +43,12 @@ Each phase must finish with a runnable application, passing tests, updated migra
 
 ## Phase 5 — Production dashboard
 
-- Authenticated application shell
+- Authenticated application shell (login UI remaining)
+- CRM customers, call intelligence, appointments filters, analytics ranges (shipped in Phase 3 CX)
 - Paginated/filterable calls and appointments
 - Transcript and recording views
-- Knowledge-base editing forms
-- Business and integration settings
+- Knowledge-base editing forms (bulk + versions)
+- Business and integration settings + audit log
 - Loading, empty, validation, and error states
 
 ## Phase 6 — Asynchronous processing and observability

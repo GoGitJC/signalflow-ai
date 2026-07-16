@@ -97,6 +97,7 @@ function AppShell() {
                 {page === "calls" ? (
                   <CallsPage
                     calls={filterBySearch(data.calls, search)}
+                    callers={data.callers}
                     loading={loading}
                     selected={selectedCall}
                     onSelect={setSelectedCall}
@@ -104,7 +105,7 @@ function AppShell() {
                   />
                 ) : null}
                 {page === "appointments" ? (
-                  <AppointmentsPage appointments={data.appointments} loading={loading} />
+                  <AppointmentsPage appointments={data.appointments} callers={data.callers} loading={loading} />
                 ) : null}
                 {page === "knowledge" ? (
                   <KnowledgePage
@@ -114,12 +115,12 @@ function AppShell() {
                     onReload={data.reload}
                   />
                 ) : null}
-                {page === "voice-agent" ? <VoiceAgentPage /> : null}
-                {page === "customers" ? <CustomersPage calls={data.calls} loading={loading} /> : null}
+                {page === "voice-agent" ? <VoiceAgentPage businessId={data.businessId} /> : null}
+                {page === "customers" ? <CustomersPage businessId={data.businessId} callers={data.callers} calls={data.calls} appointments={data.appointments} loading={loading} /> : null}
                 {page === "analytics" ? (
-                  <AnalyticsPage calls={data.calls} appointments={data.appointments} loading={loading} />
+                  <AnalyticsPage businessId={data.businessId} calls={data.calls} appointments={data.appointments} loading={loading} />
                 ) : null}
-                {page === "settings" ? <SettingsPage /> : null}
+                {page === "settings" ? <SettingsPage businessId={data.businessId} /> : null}
                 {page === "help" ? <HelpPage /> : null}
               </motion.div>
             </AnimatePresence>

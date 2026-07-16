@@ -59,6 +59,20 @@ Tenant dashboard routes (calls, appointments, knowledge base, business get/patch
 
 Auth actions write to `auth_audit_events` (register/login/refresh).
 
+## CRM & product APIs (Phase 3)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/businesses/{id}/callers` | List callers (search/status/tag filters) |
+| `GET` | `/api/callers/{id}` | Caller detail + recent call/appointment IDs |
+| `PATCH` | `/api/callers/{id}` | Update notes, tags, status, contact fields |
+| `GET` | `/api/businesses/{id}/analytics/summary` | Executive metrics (`range=7d\|30d\|month`) |
+| `GET` | `/api/businesses/{id}/voice-agents` | List voice agents |
+| `PATCH` | `/api/voice-agents/{id}` | Update greeting, prompt, voice, transfer |
+| `POST` | `/api/businesses/{id}/knowledge-base/bulk` | Bulk import KB entries |
+| `GET` | `/api/knowledge-base/{id}/versions` | KB version history |
+| `GET` | `/api/businesses/{id}/audit-events` | Integration + auth audit trail (admin) |
+
 ## Integrations
 
 | Method | Path | Auth | Description |

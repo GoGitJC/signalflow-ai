@@ -1,4 +1,13 @@
-import type { Appointment, Call, KnowledgeEntry } from "@/types";
+import type {
+  AnalyticsSummary,
+  Appointment,
+  AuditEvent,
+  Call,
+  Caller,
+  KnowledgeEntry,
+  KnowledgeVersion,
+  VoiceAgent,
+} from "@/types";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const OWNER_TOKEN = import.meta.env.VITE_OWNER_API_TOKEN ?? "";
@@ -85,6 +94,22 @@ export const api = {
     request<Call[]>(`/api/businesses/${businessId}/calls`, {
       headers: authHeaders(businessId),
     }),
+  callers: (businessId: string, params?: { q?: string; status?: string; tag?: string; limit?: number }) => {
+    const query = new URLSearchParams(
+      Object.entries(params ?? {}).filter(([, value]) => value !== undefined && value !== "") as [string, string][],
+    );
+    return request<Caller[]>(`/api/businesses/${businessId}/callers${query.size ? `?${query}` : ""}`, {
+      headers: authHeaders(businessId),
+    });
+  },
+  caller: (id: string, businessId = getBusinessId()) =>
+    request<Caller>(`/api/callers/${id}`, { headers: authHeaders(businessId) }),
+  updateCaller: (id: string, payload: Partial<Pick<Caller, "name" | "email" | "notes" | "tags" | "status">>, businessId = getBusinessId()) =>
+    request<Caller>(`/api/callers/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(businessId),
+      body: JSON.stringify(payload),
+    }),
   call: (callId: string, businessId: string) =>
     request<Call>(`/api/calls/${callId}?business_id=${businessId}`, {
       headers: authHeaders(businessId),
@@ -92,6 +117,18 @@ export const api = {
   appointments: (businessId: string) =>
     request<Appointment[]>(`/api/businesses/${businessId}/appointments`, {
       headers: authHeaders(businessId),
+    }),
+  analyticsSummary: (businessId: string, range: string) =>
+    request<AnalyticsSummary>(`/api/businesses/${businessId}/analytics/summary?range=${encodeURIComponent(range)}`, {
+      headers: authHeaders(businessId),
+    }),
+  voiceAgents: (businessId: string) =>
+    request<VoiceAgent[]>(`/api/businesses/${businessId}/voice-agents`, { headers: authHeaders(businessId) }),
+  updateVoiceAgent: (id: string, payload: Partial<Omit<VoiceAgent, "id" | "business_id" | "retell_agent_id" | "retell_agent_name" | "updated_at">>, businessId = getBusinessId()) =>
+    request<VoiceAgent>(`/api/voice-agents/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(businessId),
+      body: JSON.stringify(payload),
     }),
   knowledge: (businessId: string) =>
     request<KnowledgeEntry[]>(`/api/businesses/${businessId}/knowledge-base`, {
@@ -111,6 +148,16 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  knowledgeVersions: (entryId: string, businessId = getBusinessId()) =>
+    request<KnowledgeVersion[]>(`/api/knowledge-base/${entryId}/versions`, { headers: authHeaders(businessId) }),
+  bulkKnowledge: (businessId: string, entries: Array<Omit<KnowledgeEntry, "id">>) =>
+    request<{ created: number; ids: string[] }>(`/api/businesses/${businessId}/knowledge-base/bulk`, {
+      method: "POST",
+      headers: authHeaders(businessId),
+      body: JSON.stringify({ entries }),
+    }),
+  auditEvents: (businessId: string) =>
+    request<AuditEvent[]>(`/api/businesses/${businessId}/audit-events`, { headers: authHeaders(businessId) }),
   deleteKnowledge: (id: string, businessId?: string) => {
     const bid = businessId ?? getBusinessId();
     return fetch(`${API}/api/knowledge-base/${id}`, {

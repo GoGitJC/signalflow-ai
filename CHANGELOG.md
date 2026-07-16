@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Phase 3 customer experience: CRM callers API (notes/tags/status), analytics summary, voice-agent config API, KB bulk import + version history, audit event list, call sentiment.
+- Migration `0006_crm_experience` for callers CRM fields, voice agent config, KB versions, call sentiment.
+- Dashboard product guide: `docs/dashboard.md`.
+- TanStack Query data layer on the React dashboard.
 - Phase 2 auth slice: `POST /api/auth/register|login|refresh`, `GET /api/auth/me`, JWT access/refresh tokens, `users.password_hash`, `refresh_tokens` migration `0004_auth_tokens`.
 - Auth audit foundation: `auth_audit_events` migration `0005_auth_audit_events` for register/login/refresh outcomes.
 - Integration admin routes accept Bearer JWT (owner/admin) with legacy `X-Owner-Token` fallback.
@@ -27,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Changed
 
+- Dashboard pages upgraded for daily CRM use: Customers, Calls (transcript/timeline/AI actions), Appointments filters, Analytics executive metrics, Voice Agent API config, Knowledge versions/bulk, Settings audit log.
 - Documentation treats Retell/Cal.com availability/webhooks/dashboard as engineering-complete; final booking validation is release checklist only.
 - `POST /api/integrations/calcom/availability` and `/book` require owner auth (`X-Owner-Token`, `X-Business-Id`) and reject mismatched body `business_id`.
 - `INTEGRATION_MODE` replaces mock-only 501 behavior; mock adapters preserved for tests.
