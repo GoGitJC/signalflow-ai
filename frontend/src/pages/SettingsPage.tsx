@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/hooks/toast-context";
+import type { AuditEvent } from "@/types";
 
 type IntegrationCardProps = {
   title: string;
@@ -124,11 +125,12 @@ function IntegrationCard({
   );
 }
 
-export function SettingsPage() {
+export function SettingsPage({ businessId: initialBusinessId }: { businessId: string }) {
   const { toast } = useToast();
-  const [businessId, setLocalBusinessId] = useState(getBusinessId());
+  const [businessId, setLocalBusinessId] = useState(initialBusinessId || getBusinessId());
   const [retellStatus, setRetellStatus] = useState<RetellIntegrationStatus | null>(null);
   const [calcomStatus, setCalcomStatus] = useState<CalComIntegrationStatus | null>(null);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [profile, setProfile] = useState({
     name: "SignalFlow Demo Business",
     phone: "",
@@ -141,6 +143,7 @@ export function SettingsPage() {
     if (!businessId) return;
     api.retellStatus(businessId).then(setRetellStatus).catch(() => setRetellStatus(null));
     api.calcomStatus(businessId).then(setCalcomStatus).catch(() => setCalcomStatus(null));
+    api.auditEvents(businessId).then(setAuditEvents).catch(() => setAuditEvents([]));
   }, [businessId]);
 
   return (
@@ -153,8 +156,9 @@ export function SettingsPage() {
       <Tabs defaultValue="business">
         <TabsList>
           <TabsTrigger value="business">Business</TabsTrigger>
-          <TabsTrigger value="providers">Providers</TabsTrigger>
-          <TabsTrigger value="security">API & users</TabsTrigger>
+          <TabsTrigger value="hours">Hours</TabsTrigger><TabsTrigger value="transfer">Transfer</TabsTrigger>
+          <TabsTrigger value="providers">Integrations</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger><TabsTrigger value="security">Security & API keys</TabsTrigger><TabsTrigger value="audit">Audit log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="business" className="space-y-4">
@@ -226,6 +230,8 @@ export function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="hours"><Card><CardHeader><CardTitle>Business hours</CardTitle><CardDescription>Set the hours your receptionist uses to qualify urgent transfers.</CardDescription></CardHeader><CardContent><Textarea value={profile.hours} onChange={(event) => setProfile((current) => ({ ...current, hours: event.target.value }))} /></CardContent></Card></TabsContent>
+        <TabsContent value="transfer"><Card><CardHeader><CardTitle>Call transfer</CardTitle><CardDescription>Local preference until transfer policy is managed through Voice Agent.</CardDescription></CardHeader><CardContent><Input value={profile.forwarding} onChange={(event) => setProfile((current) => ({ ...current, forwarding: event.target.value }))} placeholder="+1 555…" /></CardContent></Card></TabsContent>
 
         <TabsContent value="providers" className="grid gap-4 lg:grid-cols-2">
           <IntegrationCard
@@ -303,6 +309,8 @@ export function SettingsPage() {
             </CardHeader>
           </Card>
         </TabsContent>
+        <TabsContent value="users"><Card><CardHeader><CardTitle>Users</CardTitle><CardDescription>Role-based workspace members are coming soon. Admins can review authorization activity in the audit log.</CardDescription></CardHeader></Card></TabsContent>
+        <TabsContent value="audit"><Card><CardHeader><CardTitle>Audit log</CardTitle><CardDescription>Recent security and integration activity.</CardDescription></CardHeader><CardContent className="space-y-3">{auditEvents.length ? auditEvents.map((event) => <div key={event.id} className="flex justify-between gap-4 border-b border-border pb-3 text-sm"><div><p className="font-medium">{event.action}</p><p className="text-muted-foreground">{event.detail || event.provider || event.source}</p></div><div className="text-right text-muted-foreground">{event.status}<br />{new Date(event.created_at).toLocaleString()}</div></div>) : <p className="text-sm text-muted-foreground">No audit events available.</p>}</CardContent></Card></TabsContent>
       </Tabs>
     </div>
   );

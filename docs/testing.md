@@ -25,6 +25,7 @@ pytest
 | `test_retell_webhook.py` | Call-ended flow, idempotency, tenant scope |
 | `test_retell_integration.py` | Agent resolution, signatures, connection test, cross-tenant |
 | `test_calcom_integration.py` | Event type resolution, slots, booking, webhooks, duplicates |
+| `test_crm_experience.py` | Callers CRM, analytics, voice agent, KB versions/bulk, audit |
 | `test_auth.py` | Register/login/refresh, JWT on integrations and tenant reads, member role denial |
 | `test_business_and_kb.py` | Business/KB CRUD with tenant auth; unauthenticated denial |
 | `test_live_flow.py` | Tool schemas, envelope unwrap, confirmation gate, live booking guard, tenants |

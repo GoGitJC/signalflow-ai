@@ -19,7 +19,7 @@ This repository is the production-oriented MVP foundation: FastAPI + PostgreSQL 
 ```
 
 - **Backend** (`backend/`): FastAPI app, SQLAlchemy models, Alembic migrations, webhook processing, tenant-scoped APIs.
-- **Frontend** (`frontend/`): Vite + React + TypeScript dashboard (overview, calls, appointments, knowledge base, settings).
+- **Frontend** (`frontend/`): Vite + React + TypeScript dashboard with TanStack Query — CRM customers, call intelligence, appointments, analytics, voice agent, knowledge base, settings.
 - **Integrations**: Mock providers by default (`INTEGRATION_MODE=mock`). Live Retell/Cal.com clients are supported when `INTEGRATION_MODE=live`; real Cal.com bookings stay gated by `ALLOW_LIVE_BOOKING=false` until explicitly enabled.
 - **Data**: PostgreSQL 16 with enum-backed domain types (`userrole`, `integrationprovider`).
 
@@ -31,7 +31,7 @@ See [docs/architecture.md](docs/architecture.md) for deeper detail.
 |-------|------------|
 | API | FastAPI, Pydantic Settings, Uvicorn |
 | ORM / DB | SQLAlchemy 2, Alembic, PostgreSQL 16, psycopg3 |
-| Dashboard | React 18+, TypeScript, Vite, Tailwind CSS |
+| Dashboard | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
 | Providers | Retell (webhooks), Twilio (SMS), Cal.com (scheduling) — mocked locally |
 | Ops | Docker Compose, GitHub Actions CI |
 
@@ -195,16 +195,17 @@ Local and CI use Dockerfiles under `backend/` and `frontend/`. Production deploy
 
 ## Screenshots
 
-Add captures under [`docs/images/`](docs/images/) as the UI ships:
+Customer experience captures (Phase 3):
 
-| Shot | Path (suggested) | Notes |
-|------|------------------|-------|
-| Overview (light) | `docs/images/overview-light.png` | Executive stats + charts |
-| Overview (dark) | `docs/images/overview-dark.png` | Full dark-mode shell |
-| Call detail | `docs/images/call-detail.png` | Transcript + summary metadata |
-| Knowledge base | `docs/images/knowledge-base.png` | Searchable table + edit dialog |
+| Shot | Path | Notes |
+|------|------|-------|
+| Overview | [`docs/images/cx-overview.png`](docs/images/cx-overview.png) | Executive stats + charts |
+| Customers | [`docs/images/cx-customers.png`](docs/images/cx-customers.png) | CRM directory |
+| Calls | [`docs/images/cx-calls.png`](docs/images/cx-calls.png) | Call intelligence list |
+| Analytics | [`docs/images/cx-analytics.png`](docs/images/cx-analytics.png) | Funnel + ranges |
+| Knowledge | [`docs/images/cx-knowledge.png`](docs/images/cx-knowledge.png) | KB editor |
 
-UI system documentation: [docs/ui.md](docs/ui.md).
+UI system documentation: [docs/ui.md](docs/ui.md). Product surface: [docs/dashboard.md](docs/dashboard.md).
 
 ## Security notes
 

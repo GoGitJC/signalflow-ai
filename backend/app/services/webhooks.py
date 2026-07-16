@@ -121,6 +121,7 @@ def process_completed_call(
         intent=payload.intent,
         urgency=payload.urgency,
         outcome=payload.outcome,
+        sentiment=payload.sentiment,
         recording_url=payload.recording_url,
         appointment_booked=payload.appointment is not None,
     )

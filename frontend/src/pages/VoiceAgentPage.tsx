@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/hooks/toast-context";
+import { api } from "@/api/client";
+import { useBusinessQuery, businessKeys } from "@/hooks/useBusinessQuery";
 
 type AgentDraft = {
   name: string;
@@ -16,9 +18,11 @@ type AgentDraft = {
   greeting: string;
   systemPrompt: string;
   active: boolean;
+  voice: string;
+  temperature: number;
+  transferNumber: string;
+  transferRules: string;
 };
-
-const STORAGE_KEY = "signalflow_voice_agent_draft";
 
 const defaults: AgentDraft = {
   name: "Front Desk Agent",
@@ -27,25 +31,28 @@ const defaults: AgentDraft = {
   systemPrompt:
     "You are a professional AI receptionist. Qualify leads, answer FAQs from the knowledge base, and book appointments when appropriate.",
   active: true,
+  voice: "nova",
+  temperature: 0.5,
+  transferNumber: "",
+  transferRules: "",
 };
 
-export function VoiceAgentPage() {
+export function VoiceAgentPage({ businessId }: { businessId: string }) {
   const { toast } = useToast();
   const [draft, setDraft] = useState<AgentDraft>(defaults);
+  const agentsQuery = useBusinessQuery(businessKeys.voiceAgents(businessId), () => api.voiceAgents(businessId), businessId);
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    try {
-      setDraft({ ...defaults, ...JSON.parse(raw) });
-    } catch {
-      /* ignore corrupt draft */
-    }
-  }, []);
+    const agent = agentsQuery.data?.[0];
+    if (agent) setDraft({ name: agent.name, retellAgentId: agent.retell_agent_id, greeting: agent.greeting, systemPrompt: agent.system_prompt, active: agent.active, voice: agent.voice ?? "nova", temperature: agent.temperature ?? 0.5, transferNumber: agent.transfer_number ?? "", transferRules: agent.transfer_rules ?? "" });
+  }, [agentsQuery.data]);
 
-  const save = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    toast({ title: "Voice agent draft saved", description: "Persisted locally until agent APIs ship." });
+  const save = async () => {
+    const agent = agentsQuery.data?.[0];
+    if (!agent) return toast({ title: "No voice agent", description: "Create an agent from your provider integration first.", variant: "danger" });
+    await api.updateVoiceAgent(agent.id, { name: draft.name, greeting: draft.greeting, system_prompt: draft.systemPrompt, active: draft.active, voice: draft.voice, temperature: draft.temperature, transfer_number: draft.transferNumber, transfer_rules: draft.transferRules }, businessId);
+    await agentsQuery.refetch();
+    toast({ title: "Voice agent saved", description: "Changes are live for this workspace." });
   };
 
   return (
@@ -54,7 +61,7 @@ export function VoiceAgentPage() {
         title="Voice Agent"
         description="Configure greeting, prompt, and Retell identity for your AI receptionist."
         actions={
-          <Button onClick={save}>
+          <Button onClick={() => void save()}>
             Save configuration
           </Button>
         }
@@ -86,6 +93,12 @@ export function VoiceAgentPage() {
                   }
                 />
               </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2"><Label htmlFor="voice">Voice</Label><Input id="voice" value={draft.voice} onChange={(event) => setDraft((current) => ({ ...current, voice: event.target.value }))} /></div>
+              <div className="grid gap-2"><Label htmlFor="temperature">Temperature</Label><Input id="temperature" type="number" min="0" max="2" step="0.1" value={draft.temperature} onChange={(event) => setDraft((current) => ({ ...current, temperature: Number(event.target.value) }))} /></div>
+              <div className="grid gap-2"><Label htmlFor="transfer-number">Transfer number</Label><Input id="transfer-number" value={draft.transferNumber} onChange={(event) => setDraft((current) => ({ ...current, transferNumber: event.target.value }))} /></div>
+              <div className="grid gap-2"><Label htmlFor="transfer-rules">Transfer rules</Label><Input id="transfer-rules" value={draft.transferRules} onChange={(event) => setDraft((current) => ({ ...current, transferRules: event.target.value }))} /></div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="greeting">Greeting</Label>
@@ -131,6 +144,7 @@ export function VoiceAgentPage() {
               </Badge>
             </CardContent>
           </Card>
+          <Card><CardHeader><CardTitle>Prompt preview</CardTitle></CardHeader><CardContent className="whitespace-pre-wrap text-sm text-muted-foreground">{draft.greeting}{"\n\n"}{draft.systemPrompt}</CardContent></Card>
           <Card>
             <CardHeader>
               <CardTitle>Test voice</CardTitle>
@@ -155,7 +169,7 @@ export function VoiceAgentPage() {
               </Button>
               <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                 <Bot className="h-4 w-4" />
-                Draft stored in this browser until authenticated agent CRUD lands.
+                “Hi, I need to reschedule.” · Agent: “I can help with that. What time works best?”
               </div>
             </CardContent>
           </Card>

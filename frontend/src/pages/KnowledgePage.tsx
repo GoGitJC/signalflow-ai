@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useToast } from "@/hooks/toast-context";
-import type { KnowledgeEntry } from "@/types";
+import type { KnowledgeEntry, KnowledgeVersion } from "@/types";
 
 export function KnowledgePage({
   businessId,
@@ -40,6 +40,9 @@ export function KnowledgePage({
   const [draft, setDraft] = useState({ category: "general", question: "", answer: "", active: true });
   const [pendingDelete, setPendingDelete] = useState<KnowledgeEntry | null>(null);
   const [busy, setBusy] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [versions, setVersions] = useState<KnowledgeVersion[]>([]);
 
   const categories = useMemo(
     () => ["all", ...new Set(entries.map((entry) => entry.category))],
@@ -134,10 +137,7 @@ export function KnowledgePage({
         title="Knowledge Base"
         description="Curate answers your voice agent uses during live conversations."
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="h-4 w-4" />
-            Add entry
-          </Button>
+          <div className="flex gap-2"><Button variant="outline" onClick={() => setBulkOpen(true)}>Bulk import</Button><Button onClick={openCreate}><Plus className="h-4 w-4" />Add entry</Button></div>
         }
       />
 
@@ -196,6 +196,9 @@ export function KnowledgePage({
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => openEdit(entry)}>
                             Edit
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => void api.knowledgeVersions(entry.id, businessId).then(setVersions)}>
+                            History
                           </Button>
                           <Button
                             size="sm"
@@ -288,6 +291,8 @@ export function KnowledgePage({
         loading={busy}
         onConfirm={() => void remove()}
       />
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}><DialogContent><DialogHeader><DialogTitle>Bulk import knowledge</DialogTitle><DialogDescription>Paste JSON lines ({`{"question":"…","answer":"…","category":"general"}`}) or Q/A lines.</DialogDescription></DialogHeader><Textarea className="min-h-48 font-mono" value={bulkText} onChange={(event) => setBulkText(event.target.value)} placeholder={'{"question":"What are your hours?","answer":"Mon–Fri, 9–5","category":"hours"}'} /><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button><Button onClick={async () => { const entries = bulkText.split("\n").filter(Boolean).map((line) => { try { const item: unknown = JSON.parse(line); if (typeof item === "object" && item !== null && "question" in item && "answer" in item) { const record = item as Record<string, unknown>; return { category: typeof record.category === "string" ? record.category : "general", question: String(record.question), answer: String(record.answer), active: true }; } } catch { const [question, ...answer] = line.split(/\s*[:?]\s*/); return { category: "general", question, answer: answer.join(" "), active: true }; } throw new Error("Invalid import line"); }); await api.bulkKnowledge(businessId, entries); setBulkOpen(false); setBulkText(""); await onReload(); toast({ title: "Knowledge imported" }); }}>Import</Button></div></DialogContent></Dialog>
+      <Dialog open={versions.length > 0} onOpenChange={(open) => !open && setVersions([])}><DialogContent><DialogHeader><DialogTitle>Version history</DialogTitle></DialogHeader><div className="max-h-96 space-y-3 overflow-auto">{versions.map((version) => <Card key={version.id}><CardContent className="p-3 text-sm"><div className="font-medium">Version {version.version} · {new Date(version.created_at).toLocaleString()}</div><p className="mt-1 text-muted-foreground">{version.answer}</p></CardContent></Card>)}</div></DialogContent></Dialog>
     </div>
   );
 }
