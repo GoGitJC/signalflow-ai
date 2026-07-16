@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Added
 
+- Live acceptance report: `docs/integrations/live-acceptance-2026-07-16.md` (Phase B pass; Phase C booking stopped after Cal.com 400).
+
 - Retell custom-function envelope unwrap (`{call, name, args}`) for live tool POSTs.
 - `ALLOW_LIVE_BOOKING` pytest coverage and cross-tenant denial on Cal.com owner routes.
 - Live-ready Retell ↔ Cal.com flow: voice-friendly tool schemas, booking confirmation gate, call linkage.

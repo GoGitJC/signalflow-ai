@@ -182,6 +182,8 @@ docker compose exec backend python -m app.cli.sync_live_integrations --business-
 
 `ALLOW_LIVE_BOOKING` defaults to `false`. Do not enable it until an operator approves a real booking.
 
+Latest controlled acceptance notes: [docs/integrations/live-acceptance-2026-07-16.md](docs/integrations/live-acceptance-2026-07-16.md).
+
 Provider docs: [Retell](docs/integrations/retell.md) · [Twilio](docs/integrations/twilio.md) · [Cal.com](docs/integrations/calcom.md).
 
 ## Deployment overview

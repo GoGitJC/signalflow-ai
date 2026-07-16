@@ -61,3 +61,6 @@ docker compose ps
 docker compose run --rm backend-test sh -c "ruff check . && ruff format --check . && mypy app && pytest -q"
 ./scripts/verify_integrations.sh
 ```
+
+Controlled live acceptance (operator-run): see [docs/integrations/live-acceptance-2026-07-16.md](integrations/live-acceptance-2026-07-16.md).
+Keep `ALLOW_LIVE_BOOKING=false` unless explicitly approving one real booking.

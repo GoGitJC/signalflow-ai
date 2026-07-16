@@ -2,6 +2,20 @@
 
 SignalFlow AI is **not production-ready for untrusted multi-tenant traffic** until authentication and live provider hardening land. Use this checklist before accepting real callers.
 
+## Live integration acceptance (pre-merge)
+
+Before treating Retell/Cal.com as demo-ready:
+
+- [ ] `ALLOW_LIVE_BOOKING=false` in runtime
+- [ ] Public `/health` 200 through current tunnel URL
+- [ ] No-booking live call: availability 200, book 403, call persisted
+- [ ] Controlled booking only with written operator approval
+- [ ] Gate restored to false after any booking attempt
+- [ ] Record results in `docs/integrations/live-acceptance-*.md`
+- [ ] Remember ngrok free URLs expire/change on restart
+
+Latest run: [docs/integrations/live-acceptance-2026-07-16.md](integrations/live-acceptance-2026-07-16.md) — Phase B passed; Phase C booking stopped after Cal.com `400`.
+
 ## Must-have before go-live
 
 - [ ] Authentication and membership authorization (Phase 2)

@@ -122,3 +122,5 @@ Event type listing/get requires `CALCOM_EVENT_TYPES_API_VERSION=2024-06-14`.
 ```
 
 Uses a ~14-day future window and never creates a booking.
+
+Live acceptance notes (booking gate + Cal.com 400 investigation): [live-acceptance-2026-07-16.md](./live-acceptance-2026-07-16.md).
