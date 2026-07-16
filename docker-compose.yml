@@ -59,7 +59,9 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: development
     environment:
       VITE_API_URL: http://localhost:8000
       VITE_BUSINESS_ID: ${VITE_BUSINESS_ID:-}

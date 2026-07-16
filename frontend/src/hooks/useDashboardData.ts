@@ -1,12 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, getBusinessId } from "@/api/client";
-import type { Appointment, Call, KnowledgeEntry, LoadState } from "@/types";
+import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { api } from "@/api/client";
+import { useAuth } from "@/auth/AuthProvider";
+import { businessKeys, useBusinessQuery } from "@/hooks/useBusinessQuery";
+import type { Appointment, Call, Caller, KnowledgeEntry, LoadState } from "@/types";
 
 export type DashboardData = {
   businessId: string;
   calls: Call[];
   appointments: Appointment[];
   knowledge: KnowledgeEntry[];
+  callers: Caller[];
   status: LoadState;
   error: string;
   apiOnline: boolean;
@@ -14,47 +18,56 @@ export type DashboardData = {
 };
 
 export function useDashboardData(): DashboardData {
-  const businessId = useMemo(() => getBusinessId(), []);
-  const [calls, setCalls] = useState<Call[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [knowledge, setKnowledge] = useState<KnowledgeEntry[]>([]);
-  const [status, setStatus] = useState<LoadState>("idle");
-  const [error, setError] = useState("");
-  const [apiOnline, setApiOnline] = useState(true);
+  const { businessId, status: authStatus } = useAuth();
+  const client = useQueryClient();
+  const enabled = Boolean(businessId) && authStatus === "authenticated";
+  const callsQuery = useBusinessQuery(
+    businessKeys.calls(businessId),
+    () => api.calls(businessId),
+    enabled ? businessId : "",
+  );
+  const appointmentsQuery = useBusinessQuery(
+    businessKeys.appointments(businessId),
+    () => api.appointments(businessId),
+    enabled ? businessId : "",
+  );
+  const knowledgeQuery = useBusinessQuery(
+    businessKeys.knowledge(businessId),
+    () => api.knowledge(businessId),
+    enabled ? businessId : "",
+  );
+  const callersQuery = useBusinessQuery(
+    businessKeys.callers(businessId),
+    () => api.callers(businessId),
+    enabled ? businessId : "",
+  );
+  const healthQuery = useBusinessQuery(businessKeys.health, api.health, "health");
+  const queries = [callsQuery, appointmentsQuery, knowledgeQuery, callersQuery];
+  const status: LoadState =
+    authStatus === "loading" || !enabled
+      ? "loading"
+      : queries.some((query) => query.isError)
+        ? "error"
+        : queries.some((query) => query.isLoading)
+          ? "loading"
+          : "success";
+  const error = queries.find((query) => query.error)?.error instanceof Error
+    ? (queries.find((query) => query.error)?.error as Error).message
+    : "";
+  const reload = useCallback(
+    () => client.invalidateQueries({ queryKey: businessKeys.root(businessId) }).then(() => undefined),
+    [businessId, client],
+  );
 
-  const reload = useCallback(async () => {
-    if (!businessId) {
-      setStatus("error");
-      setError("Set VITE_BUSINESS_ID or localStorage key signalflow_business_id to load live data.");
-      return;
-    }
-    setStatus("loading");
-    setError("");
-    try {
-      const [health, nextCalls, nextAppointments, nextKnowledge] = await Promise.all([
-        api
-          .health()
-          .then(() => true)
-          .catch(() => false),
-        api.calls(businessId),
-        api.appointments(businessId),
-        api.knowledge(businessId),
-      ]);
-      setApiOnline(health);
-      setCalls(nextCalls);
-      setAppointments(nextAppointments);
-      setKnowledge(nextKnowledge);
-      setStatus("success");
-    } catch (err) {
-      setApiOnline(false);
-      setStatus("error");
-      setError(err instanceof Error ? err.message : "Unable to load dashboard data");
-    }
-  }, [businessId]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  return { businessId, calls, appointments, knowledge, status, error, apiOnline, reload };
+  return {
+    businessId,
+    calls: callsQuery.data ?? [],
+    appointments: appointmentsQuery.data ?? [],
+    knowledge: knowledgeQuery.data ?? [],
+    callers: callersQuery.data ?? [],
+    status,
+    error,
+    apiOnline: !healthQuery.isError,
+    reload,
+  };
 }

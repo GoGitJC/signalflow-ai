@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
+from app.api.deps import assert_tenant_access, require_business_member
 from app.db.session import get_db
 from app.models import Appointment, Business, Call, Caller
 from app.schemas.appointment import AppointmentCreate, AppointmentRead, AppointmentUpdate
@@ -10,7 +11,12 @@ router = APIRouter(tags=["appointments"])
 
 
 @router.get("/api/businesses/{business_id}/appointments", response_model=list[AppointmentRead])
-def list_appointments(business_id: str, db: Session = Depends(get_db)):
+def list_appointments(
+    business_id: str,
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(require_business_member),
+):
+    assert_tenant_access(tenant_id, business_id)
     if not db.get(Business, business_id):
         raise HTTPException(status_code=404, detail="Business not found")
     stmt = (
@@ -22,7 +28,12 @@ def list_appointments(business_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/api/appointments", response_model=AppointmentRead, status_code=201)
-def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)):
+def create_appointment(
+    payload: AppointmentCreate,
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(require_business_member),
+):
+    assert_tenant_access(tenant_id, payload.business_id)
     if not db.get(Business, payload.business_id):
         raise HTTPException(status_code=404, detail="Business not found")
     caller = db.scalar(
@@ -51,7 +62,9 @@ def update_appointment(
     business_id: str,
     payload: AppointmentUpdate,
     db: Session = Depends(get_db),
+    tenant_id: str = Depends(require_business_member),
 ):
+    assert_tenant_access(tenant_id, business_id)
     appointment = db.scalar(
         select(Appointment).where(
             Appointment.id == appointment_id, Appointment.business_id == business_id

@@ -1,8 +1,11 @@
 from datetime import UTC, datetime, timedelta
 
+from tests.conftest import create_business, tenant_headers
+
 
 def test_completed_call_webhook_creates_caller_call_summary_and_appointment(client):
-    business = client.post("/api/businesses", json={"name": "Alamo Dental"}).json()
+    business = create_business(client)
+    headers = tenant_headers(business["id"])
     start = datetime.now(UTC).replace(microsecond=0)
     payload = {
         "event_id": "evt-call-ended-1",
@@ -33,20 +36,22 @@ def test_completed_call_webhook_creates_caller_call_summary_and_appointment(clie
     assert "Emergency dental exam" in body["call"]["summary"]
     assert body["appointment_id"]
 
-    calls = client.get(f"/api/businesses/{business['id']}/calls").json()
-    appointments = client.get(f"/api/businesses/{business['id']}/appointments").json()
+    calls = client.get(f"/api/businesses/{business['id']}/calls", headers=headers).json()
+    appointments = client.get(
+        f"/api/businesses/{business['id']}/appointments", headers=headers
+    ).json()
     assert len(calls) == 1
     assert len(appointments) == 1
 
     duplicate = client.post("/api/webhooks/retell/call-ended", json=payload)
     assert duplicate.status_code == 200
     assert duplicate.json()["duplicate"] is True
-    assert len(client.get(f"/api/businesses/{business['id']}/calls").json()) == 1
+    assert len(client.get(f"/api/businesses/{business['id']}/calls", headers=headers).json()) == 1
 
 
 def test_call_detail_is_tenant_scoped(client):
-    first = client.post("/api/businesses", json={"name": "First"}).json()
-    second = client.post("/api/businesses", json={"name": "Second"}).json()
+    first = create_business(client, name="First")
+    second = create_business(client, name="Second")
     start = datetime.now(UTC).replace(microsecond=0)
     payload = {
         "business_id": first["id"],
@@ -56,5 +61,16 @@ def test_call_detail_is_tenant_scoped(client):
         "caller": {"phone": "+12105550000"},
     }
     call = client.post("/api/webhooks/retell/call-ended", json=payload).json()["call"]
-    denied = client.get(f"/api/calls/{call['id']}", params={"business_id": second["id"]})
+    denied = client.get(
+        f"/api/calls/{call['id']}",
+        params={"business_id": second["id"]},
+        headers=tenant_headers(second["id"]),
+    )
     assert denied.status_code == 404
+
+    cross = client.get(
+        f"/api/calls/{call['id']}",
+        params={"business_id": second["id"]},
+        headers=tenant_headers(first["id"]),
+    )
+    assert cross.status_code == 403

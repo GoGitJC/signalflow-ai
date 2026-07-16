@@ -1,23 +1,27 @@
 import { useMemo, useState } from "react";
 import { Users } from "lucide-react";
+import { api } from "@/api/client";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SearchBar } from "@/components/shared/SearchBar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { deriveCustomers } from "@/lib/metrics";
 import { formatDateTime } from "@/lib/utils";
-import type { Call } from "@/types";
+import type { Appointment, Call, Caller } from "@/types";
 
-export function CustomersPage({ calls, loading }: { calls: Call[]; loading: boolean }) {
+export function CustomersPage({ businessId, callers, calls, appointments, loading }: {
+  businessId: string; callers: Caller[]; calls: Call[]; appointments: Appointment[]; loading: boolean;
+}) {
   const [query, setQuery] = useState("");
-  const customers = useMemo(() => deriveCustomers(calls), [calls]);
-  const filtered = customers.filter((customer) => {
+  const [status, setStatus] = useState("all");
+  const [selected, setSelected] = useState<Caller | null>(null);
+  const filtered = callers.filter((customer) => {
     const q = query.trim().toLowerCase();
-    if (!q) return true;
-    return customer.id.toLowerCase().includes(q) || (customer.intent || "").toLowerCase().includes(q);
+    return (!q || [customer.name, customer.phone, customer.email, customer.tags.join(" ")].some((value) => value?.toLowerCase().includes(q))) &&
+      (status === "all" || customer.status === status);
   });
+  const tags = useMemo(() => [...new Set(callers.flatMap((caller) => caller.tags))], [callers]);
 
   if (loading) {
     return (
@@ -32,9 +36,13 @@ export function CustomersPage({ calls, loading }: { calls: Call[]; loading: bool
     <div className="space-y-6">
       <PageHeader
         title="Customers"
-        description="Callers inferred from conversation history. Dedicated CRM records arrive with auth."
+        description="Customer history, follow-up context, and booking activity in one place."
         actions={<SearchBar value={query} onChange={setQuery} className="w-72" placeholder="Search callers…" />}
       />
+      <div className="flex flex-wrap gap-2">
+        {["all", "lead", "customer", "closed"].map((item) => <Badge key={item} className="cursor-pointer capitalize" variant={status === item ? "accent" : "secondary"} onClick={() => setStatus(item)}>{item}</Badge>)}
+        {tags.slice(0, 6).map((tag) => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+      </div>
 
       {!filtered.length ? (
         <EmptyState
@@ -50,24 +58,18 @@ export function CustomersPage({ calls, loading }: { calls: Call[]; loading: bool
                 <thead className="border-b border-border bg-muted/40 text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3 font-medium">Caller</th>
-                    <th className="px-4 py-3 font-medium">Calls</th>
-                    <th className="px-4 py-3 font-medium">Last seen</th>
-                    <th className="px-4 py-3 font-medium">Latest intent</th>
-                    <th className="px-4 py-3 font-medium">Lead</th>
+                    <th className="px-4 py-3 font-medium">Phone</th><th className="px-4 py-3 font-medium">Calls</th>
+                    <th className="px-4 py-3 font-medium">Last interaction</th><th className="px-4 py-3 font-medium">Tags</th><th className="px-4 py-3 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((customer) => (
-                    <tr key={customer.id} className="border-b border-border/70">
-                      <td className="px-4 py-3 font-medium">{customer.id.slice(0, 12)}…</td>
-                      <td className="px-4 py-3">{customer.calls}</td>
-                      <td className="px-4 py-3">{formatDateTime(customer.lastSeen)}</td>
-                      <td className="px-4 py-3">{customer.intent || "—"}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={customer.booked ? "success" : "secondary"}>
-                          {customer.booked ? "Booked" : "Open"}
-                        </Badge>
-                      </td>
+                    <tr key={customer.id} className="cursor-pointer border-b border-border/70 hover:bg-muted/40" onClick={() => setSelected(customer)}>
+                      <td className="px-4 py-3 font-medium">{customer.name || "Unknown caller"}<div className="text-xs font-normal text-muted-foreground">{customer.email || "No email"}</div></td>
+                      <td className="px-4 py-3">{customer.phone}</td><td className="px-4 py-3">{customer.call_count}</td>
+                      <td className="px-4 py-3">{formatDateTime(customer.last_interaction_at)}</td>
+                      <td className="px-4 py-3">{customer.tags.map((tag) => <Badge key={tag} variant="secondary" className="mr-1">{tag}</Badge>)}</td>
+                      <td className="px-4 py-3"><Badge variant={customer.status === "customer" ? "success" : "secondary"}>{customer.status}</Badge></td>
                     </tr>
                   ))}
                 </tbody>
@@ -76,6 +78,26 @@ export function CustomersPage({ calls, loading }: { calls: Call[]; loading: bool
           </CardContent>
         </Card>
       )}
+      {selected && <CustomerDetail caller={selected} calls={calls.filter((call) => call.caller_id === selected.id)} appointments={appointments.filter((item) => item.caller_id === selected.id)} businessId={businessId} onClose={() => setSelected(null)} />}
     </div>
   );
+}
+
+function CustomerDetail({ caller, calls, appointments, businessId, onClose }: { caller: Caller; calls: Call[]; appointments: Appointment[]; businessId: string; onClose: () => void }) {
+  const [notes, setNotes] = useState(caller.notes ?? "");
+  const [tags, setTags] = useState(caller.tags.join(", "));
+  const save = async () => {
+    await api.updateCaller(caller.id, {
+      notes,
+      tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    });
+    onClose();
+  };
+  return <Card className="border-primary/30"><CardContent className="space-y-4 p-5">
+    <div className="flex justify-between"><div><h2 className="font-semibold">{caller.name || caller.phone}</h2><p className="text-sm text-muted-foreground">{caller.phone}</p></div><button className="text-sm text-muted-foreground" onClick={onClose}>Close</button></div>
+    <label className="grid gap-1 text-sm">Notes<textarea className="min-h-24 rounded-xl border border-input bg-card p-3" value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
+    <label className="grid gap-1 text-sm">Tags<input className="rounded-xl border border-input bg-card p-3" value={tags} onChange={(event) => setTags(event.target.value)} /></label>
+    <button className="rounded-xl bg-primary px-3 py-2 text-sm text-primary-foreground" onClick={() => void save()}>Save customer</button>
+    <div className="grid gap-3 md:grid-cols-2"><section><h3 className="mb-2 text-sm font-medium">Recent calls</h3>{calls.map((call) => <p key={call.id} className="py-1 text-sm">{formatDateTime(call.started_at)} · {call.intent || "Conversation"}</p>) || <p className="text-sm text-muted-foreground">No calls yet.</p>}</section><section><h3 className="mb-2 text-sm font-medium">Appointments</h3>{appointments.map((item) => <p key={item.id} className="py-1 text-sm">{formatDateTime(item.start_time)} · {item.service}</p>) || <p className="text-sm text-muted-foreground">No appointments yet.</p>}</section></div>
+  </CardContent></Card>;
 }

@@ -42,6 +42,7 @@ class RetellCallEndedPayload(BaseModel):
     urgency: str = "normal"
     outcome: str = "completed"
     summary: str | None = None
+    sentiment: str | None = None
     requested_service: str | None = None
     appointment: AppointmentPayload | None = None
 
@@ -60,6 +61,7 @@ class CallRead(ORMModel):
     intent: str | None
     urgency: str | None
     outcome: str | None
+    sentiment: str | None = None
     recording_url: str | None
     appointment_booked: bool
 

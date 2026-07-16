@@ -44,15 +44,64 @@ Base URL defaults to `http://localhost:8000`. There is no global `/api` router p
 | `POST` | `/api/appointments` | Create |
 | `PATCH` | `/api/appointments/{appointment_id}` | Update (`business_id` query required) |
 
-## Integrations (mock mode)
+## Auth (Phase 2+)
+
+Cookie sessions (preferred) — see [auth.md](auth.md).
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/integrations/calcom/availability` | Slot list |
-| `POST` | `/api/integrations/calcom/book` | Book appointment slot |
-| `POST` | `/api/integrations/twilio/send-summary` | Send SMS summary |
+| `POST` | `/api/auth/register` | Create business + owner; sets HttpOnly cookies |
+| `POST` | `/api/auth/login` | Email/password; optional `remember_me` |
+| `POST` | `/api/auth/refresh` | Rotate refresh cookie |
+| `POST` | `/api/auth/logout` | Revoke refresh + clear cookies |
+| `GET` | `/api/auth/me` | Current user |
+| `POST` | `/api/auth/forgot-password` | Start password reset |
+| `POST` | `/api/auth/reset-password` | Complete password reset |
+| `POST` | `/api/auth/verify-email` | Placeholder email verification |
+| `GET` | `/api/auth/users` | List workspace users (admin) |
+| `GET/POST` | `/api/auth/invitations` | List/create invites (admin) |
+| `POST` | `/api/auth/invitations/accept` | Accept invite → session |
 
-When mocks are disabled, these return **501**.
+Legacy `X-Owner-Token` remains for bootstrap/CLI only. Dashboard uses cookies exclusively.
+
+## CRM & product APIs (Phase 3)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/businesses/{id}/callers` | List callers (search/status/tag filters) |
+| `GET` | `/api/callers/{id}` | Caller detail + recent call/appointment IDs |
+| `PATCH` | `/api/callers/{id}` | Update notes, tags, status, contact fields |
+| `GET` | `/api/businesses/{id}/analytics/summary` | Executive metrics (`range=7d\|30d\|month`) |
+| `GET` | `/api/businesses/{id}/voice-agents` | List voice agents |
+| `PATCH` | `/api/voice-agents/{id}` | Update greeting, prompt, voice, transfer |
+| `POST` | `/api/businesses/{id}/knowledge-base/bulk` | Bulk import KB entries |
+| `GET` | `/api/knowledge-base/{id}/versions` | KB version history |
+| `GET` | `/api/businesses/{id}/audit-events` | Integration + auth audit trail (admin) |
+
+## Integrations
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/integrations/retell/status` | Owner | Masked Retell status |
+| `PUT` | `/api/integrations/retell` | Owner | Upsert Retell credentials |
+| `POST` | `/api/integrations/retell/test` | Owner | Connection test |
+| `GET` | `/api/integrations/calcom/status` | Owner | Masked Cal.com status |
+| `PUT` | `/api/integrations/calcom` | Owner | Upsert Cal.com credentials |
+| `POST` | `/api/integrations/calcom/test` | Owner | Connection test |
+| `POST` | `/api/integrations/calcom/availability` | Owner | Slot list |
+| `POST` | `/api/integrations/calcom/book` | Owner | Book appointment slot |
+| `POST` | `/api/integrations/twilio/send-summary` | — | Send SMS summary |
+
+Owner routes require `X-Owner-Token` and `X-Business-Id`. Live Cal.com booking also requires `ALLOW_LIVE_BOOKING=true`.
+
+## Retell voice tools
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/retell/tools/check_availability` | Voice-friendly slots via agent → business mapping |
+| `POST` | `/api/retell/tools/book_appointment` | Book after `caller_confirmed=true` |
+
+Accepts either a flat JSON body or Retell's `{ "call", "name", "args" }` envelope.
 
 ## Webhooks
 

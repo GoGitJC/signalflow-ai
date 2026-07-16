@@ -8,6 +8,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -97,15 +98,65 @@ class User(Base):
     )
     name: Mapped[str] = mapped_column(String(200))
     email: Mapped[str] = mapped_column(String(320), unique=True)
+    password_hash: Mapped[str | None] = mapped_column(String(200))
     role: Mapped[UserRole] = mapped_column(user_role_enum, default=UserRole.owner)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     business: Mapped[Business] = relationship(back_populates="users")
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    user: Mapped[User] = relationship(back_populates="refresh_tokens")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Invitation(Base):
+    __tablename__ = "invitations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    role: Mapped[str] = mapped_column(String(40), default=UserRole.member.value)
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    invited_by_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class VoiceAgent(Base):
     __tablename__ = "voice_agents"
-    __table_args__ = (UniqueConstraint("business_id", "retell_agent_id"),)
+    __table_args__ = (
+        UniqueConstraint("business_id", "retell_agent_id"),
+        UniqueConstraint("retell_agent_id", name="uq_voice_agents_retell_agent_id"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     business_id: Mapped[str] = mapped_column(
@@ -113,9 +164,15 @@ class VoiceAgent(Base):
     )
     retell_agent_id: Mapped[str] = mapped_column(String(200))
     name: Mapped[str] = mapped_column(String(200))
+    retell_agent_name: Mapped[str | None] = mapped_column(String(200))
     greeting: Mapped[str] = mapped_column(Text)
     system_prompt: Mapped[str] = mapped_column(Text)
+    voice: Mapped[str | None] = mapped_column(String(80))
+    temperature: Mapped[float | None] = mapped_column(Float)
+    transfer_number: Mapped[str | None] = mapped_column(String(32))
+    transfer_rules: Mapped[str | None] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=utcnow)
 
 
 class KnowledgeBaseEntry(Base):
@@ -129,6 +186,26 @@ class KnowledgeBaseEntry(Base):
     question: Mapped[str] = mapped_column(Text)
     answer: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=utcnow)
+
+
+class KnowledgeBaseEntryVersion(Base):
+    __tablename__ = "knowledge_base_entry_versions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    entry_id: Mapped[str] = mapped_column(
+        ForeignKey("knowledge_base_entries.id", ondelete="CASCADE"), index=True
+    )
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer)
+    category: Mapped[str] = mapped_column(String(120))
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class Caller(Base):
@@ -142,7 +219,11 @@ class Caller(Base):
     name: Mapped[str | None] = mapped_column(String(200))
     phone: Mapped[str] = mapped_column(String(32))
     email: Mapped[str | None] = mapped_column(String(320))
+    notes: Mapped[str | None] = mapped_column(Text)
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(40), default="lead")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), onupdate=utcnow)
 
 
 class Call(Base):
@@ -166,6 +247,7 @@ class Call(Base):
     intent: Mapped[str | None] = mapped_column(String(120))
     urgency: Mapped[str | None] = mapped_column(String(40))
     outcome: Mapped[str | None] = mapped_column(String(80))
+    sentiment: Mapped[str | None] = mapped_column(String(40))
     recording_url: Mapped[str | None] = mapped_column(Text)
     appointment_booked: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -200,6 +282,40 @@ class Integration(Base):
     provider: Mapped[IntegrationProvider] = mapped_column(integration_provider_enum)
     encrypted_credentials: Mapped[str] = mapped_column(Text)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_test_status: Mapped[str | None] = mapped_column(String(40))
+    last_test_error: Mapped[str | None] = mapped_column(Text)
+
+
+class IntegrationAuditEvent(Base):
+    __tablename__ = "integration_audit_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str] = mapped_column(
+        ForeignKey("businesses.id", ondelete="CASCADE"), index=True
+    )
+    provider: Mapped[str] = mapped_column(String(40), index=True)
+    action: Mapped[str] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(40))
+    detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class AuthAuditEvent(Base):
+    __tablename__ = "auth_audit_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    business_id: Mapped[str | None] = mapped_column(
+        ForeignKey("businesses.id", ondelete="SET NULL"), index=True
+    )
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
+    action: Mapped[str] = mapped_column(String(80), index=True)
+    status: Mapped[str] = mapped_column(String(40))
+    detail: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class WebhookEvent(Base):
