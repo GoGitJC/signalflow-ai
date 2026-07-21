@@ -10,7 +10,7 @@ export function NotFoundPage() {
         <p className="text-sm font-medium text-teal-800 dark:text-teal-300">404</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Page not found</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          That route is not part of the SignalFlow dashboard. Head back to Overview or open Help.
+          That route is not part of the ForgeLinq dashboard. Head back to Overview or open Help.
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-2">

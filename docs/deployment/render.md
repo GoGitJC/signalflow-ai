@@ -1,6 +1,6 @@
 # Render backend deployment
 
-Production API for SignalFlow AI runs on **Render** as a Docker web service with **Render Managed PostgreSQL**.
+Production API for ForgeLinq runs on **Render** as a Docker web service with **Render Managed PostgreSQL**.
 
 > **Do not deploy until a human approves.** This document is configuration-only.
 

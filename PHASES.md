@@ -1,4 +1,4 @@
-# SignalFlow AI Delivery Phases
+# ForgeLinq Delivery Phases
 
 Each phase must finish with a runnable application, passing tests, updated migrations, and documented local verification.
 

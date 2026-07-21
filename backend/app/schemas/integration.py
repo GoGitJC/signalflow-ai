@@ -103,20 +103,35 @@ class VoiceFriendlySlot(BaseModel):
 
 
 def unwrap_retell_tool_payload(data: Any) -> Any:
-    """Retell custom functions POST {call, name, args}; accept flat args too."""
+    """Normalize Retell custom-function payloads.
+
+    Supported shapes:
+    1. Envelope: ``{ "name", "call", "args" }`` (Retell default custom function POST)
+    2. Args-only flat body (when Retell "Payload: args only" is enabled)
+
+    Envelope detection uses ``args`` / ``call`` only — top-level ``name`` is also the
+    attendee field on flat booking bodies and must not trigger unwrap.
+    """
     if not isinstance(data, dict):
         return data
-    args = data.get("args")
-    if not isinstance(args, dict):
-        return data
-    payload = dict(args)
-    raw_call = data.get("call")
-    call: dict[str, Any] = raw_call if isinstance(raw_call, dict) else {}
-    if not payload.get("retell_agent_id") and call.get("agent_id"):
-        payload["retell_agent_id"] = call["agent_id"]
-    if not payload.get("retell_call_id") and call.get("call_id"):
-        payload["retell_call_id"] = call["call_id"]
-    return payload
+
+    if "args" in data:
+        args = data.get("args")
+        if not isinstance(args, dict):
+            raise ValueError("Retell tool envelope requires args to be an object")
+        payload = dict(args)
+        raw_call = data.get("call")
+        call: dict[str, Any] = raw_call if isinstance(raw_call, dict) else {}
+        if not payload.get("retell_agent_id") and call.get("agent_id"):
+            payload["retell_agent_id"] = call["agent_id"]
+        if not payload.get("retell_call_id") and call.get("call_id"):
+            payload["retell_call_id"] = call["call_id"]
+        return payload
+
+    if "call" in data:
+        raise ValueError("Retell tool envelope missing args object")
+
+    return data
 
 
 class RetellToolAvailabilityRequest(BaseModel):

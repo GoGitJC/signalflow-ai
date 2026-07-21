@@ -22,14 +22,20 @@ def test_retell_resolve_agent_exact_match():
         {"agent_id": "a1", "agent_name": "Universal_Demo"},
         {"agent_id": "a2", "agent_name": "Other"},
     ]
-    with patch("app.integrations.retell_client.request_json", return_value=agents):
+    with patch(
+        "app.integrations.retell_client.request_json",
+        return_value={"items": agents, "has_more": False},
+    ):
         resolved = client.resolve_agent(agent_id=None, agent_name="Universal_Demo")
     assert resolved["agent_id"] == "a1"
 
 
 def test_retell_resolve_agent_no_match():
     client = RetellClient("test-key")
-    with patch("app.integrations.retell_client.request_json", return_value=[]):
+    with patch(
+        "app.integrations.retell_client.request_json",
+        return_value={"items": [], "has_more": False},
+    ):
         with pytest.raises(ProviderNotFoundError):
             client.resolve_agent(agent_id=None, agent_name="Universal_Demo")
 
@@ -40,7 +46,10 @@ def test_retell_resolve_agent_duplicate_match():
         {"agent_id": "a1", "agent_name": "Universal_Demo"},
         {"agent_id": "a2", "agent_name": "Universal_Demo"},
     ]
-    with patch("app.integrations.retell_client.request_json", return_value=agents):
+    with patch(
+        "app.integrations.retell_client.request_json",
+        return_value={"items": agents, "has_more": False},
+    ):
         with pytest.raises(ProviderConflictError):
             client.resolve_agent(agent_id=None, agent_name="Universal_Demo")
 

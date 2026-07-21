@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "SignalFlow AI"
+    app_name: str = "ForgeLinq"
     environment: str = Field(
         default="development",
         validation_alias=AliasChoices("SIGNALFLOW_ENVIRONMENT", "APP_ENV", "ENVIRONMENT"),

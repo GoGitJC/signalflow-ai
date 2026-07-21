@@ -1,14 +1,21 @@
 # Changelog
 
-All notable changes to SignalFlow AI are documented in this file.
+All notable changes to ForgeLinq are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/) where practical.
 
 ## [Unreleased]
 
+### Changed
+
+- Product branding (user-facing): SignalFlow AI → **ForgeLinq** (repo/package/env names unchanged).
+- Retell agent listing uses `POST /v2/list-agents` with voice filter + pagination (`items` / `has_more` / `pagination_key`).
+
 ### Added
 
+- Booking path structured logs (masked email/phone), placeholder email rejection, Cal.com attendee `language`, stronger booking idempotency after provider success.
+- Retell tool configuration guide: `docs/integrations/retell-tools.md`.
 - Production deployment pack: `render.yaml`, `frontend/vercel.json`, `.env.production.example`, Cloudflare/Render/Vercel runbooks, `LAUNCH_CHECKLIST.md`, disaster-recovery guide.
 - Multi-origin `CORS_ORIGINS`, optional `TRUSTED_HOSTS`, `APP_ENV` alias, Render `postgresql://` → `psycopg` URL normalization, `$PORT`-aware backend image.
 - Closed-beta launch pack: HVAC demo tenant (`Summit HVAC Pros`), onboarding welcome + test-call checklist, Final Acceptance page (`/readiness`), CSV exports, searchable audit log.

@@ -1,6 +1,6 @@
 # Onboarding
 
-First-run path for SignalFlow AI closed beta.
+First-run path for ForgeLinq closed beta.
 
 ## In-app wizard (`/onboarding`)
 
