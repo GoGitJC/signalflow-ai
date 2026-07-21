@@ -22,13 +22,13 @@ def _map_response_error(response: httpx.Response) -> ProviderError:
         message = payload.get("message") or payload.get("error") or response.text[:200]
     except Exception:
         message = response.text[:200] or f"Upstream error ({status})"
-    if status == 401:
+    if status == 401 or status == 403:
         return ProviderAuthError(message)
     if status == 404:
         return ProviderNotFoundError(message)
     if status == 409:
         return ProviderConflictError(message)
-    if status == 422:
+    if status in {400, 422}:
         return ProviderValidationError(message)
     if status == 429:
         return ProviderRateLimitError(message)

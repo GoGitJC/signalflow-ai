@@ -17,20 +17,57 @@ class RetellClient:
         self.settings = settings or get_settings()
 
     def _headers(self) -> dict[str, str]:
-        return {"Authorization": f"Bearer {self.api_key}"}
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
-    def list_agents(self) -> list[dict[str, Any]]:
-        payload = request_json(
-            self.settings,
-            method="GET",
-            url=f"{self.base_url}/list-agents",
-            headers=self._headers(),
-            params={"limit": 1000, "is_latest": "true"},
-            retryable=True,
-        )
-        if isinstance(payload, list):
-            return payload
-        return payload.get("agents") or payload.get("items") or []
+    def list_agents(self, *, channel: str = "voice", limit: int = 100) -> list[dict[str, Any]]:
+        """List agents via POST /v2/list-agents (GET /list-agents is deprecated)."""
+        agents: list[dict[str, Any]] = []
+        pagination_key: str | None = None
+        # Cap pages to avoid runaway loops on malformed has_more.
+        for _ in range(50):
+            body: dict[str, Any] = {
+                "filter_criteria": {
+                    "channel": {
+                        "op": "eq",
+                        "value": channel,
+                    }
+                },
+                "limit": limit,
+            }
+            if pagination_key:
+                body["pagination_key"] = pagination_key
+
+            payload = request_json(
+                self.settings,
+                method="POST",
+                url=f"{self.base_url}/v2/list-agents",
+                headers=self._headers(),
+                json_body=body,
+                retryable=True,
+            )
+            if not isinstance(payload, dict):
+                raise ProviderValidationError("Malformed Retell list-agents response")
+
+            items = payload.get("items")
+            if items is None:
+                # Defensive: older shapes should not be treated as success for v2.
+                raise ProviderValidationError("Retell list-agents response missing items")
+            if not isinstance(items, list):
+                raise ProviderValidationError("Retell list-agents items must be a list")
+
+            agents.extend(cast(list[dict[str, Any]], items))
+
+            if not payload.get("has_more"):
+                break
+            next_key = payload.get("pagination_key")
+            if not isinstance(next_key, str) or not next_key:
+                break
+            pagination_key = next_key
+
+        return agents
 
     def get_agent(self, agent_id: str) -> dict[str, Any]:
         payload = request_json(

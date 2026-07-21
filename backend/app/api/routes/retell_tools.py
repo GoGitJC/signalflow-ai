@@ -1,10 +1,12 @@
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.logging import request_id_ctx
 from app.db.session import get_db
 from app.schemas.integration import (
     AvailabilityRequest,
@@ -24,6 +26,7 @@ from app.services.integrations import (
 
 router = APIRouter(prefix="/api/retell/tools", tags=["retell-tools"])
 settings = get_settings()
+booking_log = logging.getLogger("signalflow.booking")
 
 
 def _business_from_agent(db: Session, retell_agent_id: str) -> str:
@@ -120,6 +123,18 @@ def book_appointment(payload: RetellToolBookingRequest, db: Session = Depends(ge
             raise HTTPException(status_code=422, detail="Invalid option_id")
         # Prefer explicit option_id over free-form start to avoid agent drift.
         start = parsed
+
+    booking_log.info(
+        "retell_book_tool correlation_id=%s business_id=%s retell_agent_id=%s retell_call_id=%s "
+        "event_type_id=%s start_utc=%s option_id=%s",
+        request_id_ctx.get("-"),
+        business_id,
+        payload.retell_agent_id,
+        payload.retell_call_id or "-",
+        creds.get("event_type_id") or "-",
+        start.astimezone(UTC).isoformat(),
+        payload.option_id or "-",
+    )
 
     request = BookingRequest(
         business_id=business_id,

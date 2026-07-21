@@ -1,6 +1,6 @@
 # Monitoring
 
-Production monitoring preparation for SignalFlow AI.
+Production monitoring preparation for ForgeLinq.
 
 ## Built-in metrics (`GET /metrics`)
 

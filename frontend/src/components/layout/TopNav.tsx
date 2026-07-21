@@ -56,7 +56,7 @@ export function TopNav({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button type="button" className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
-                <Avatar name={userLabel || "SignalFlow Operator"} />
+                <Avatar name={userLabel || "ForgeLinq Operator"} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -48,7 +48,7 @@ export function OnboardingPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="First-run setup"
-        description="Welcome to SignalFlow AI closed beta — connect providers, add knowledge, then verify a test call."
+        description="Welcome to ForgeLinq closed beta — connect providers, add knowledge, then verify a test call."
       />
       <div className="flex flex-wrap gap-2">
         {steps.map((label, index) => (
@@ -75,7 +75,7 @@ export function OnboardingPage() {
             <div className="space-y-4">
               <BrandLogo />
               <p className="text-sm text-muted-foreground">
-                SignalFlow answers inbound calls, books appointments, and gives your team a CRM dashboard.
+                ForgeLinq answers inbound calls, books appointments, and gives your team a CRM dashboard.
                 This wizard takes about five minutes. Keep live booking off until Final Acceptance.
               </p>
               <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">

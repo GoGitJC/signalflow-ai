@@ -36,7 +36,7 @@ export function LoginPage() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to your SignalFlow workspace."
+      subtitle="Sign in to your ForgeLinq workspace."
       footer={
         <p>
           New here?{" "}

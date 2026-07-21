@@ -1,6 +1,6 @@
 # Vercel frontend deployment
 
-Production dashboard for SignalFlow AI runs on **Vercel** as a Vite SPA.
+Production dashboard for ForgeLinq runs on **Vercel** as a Vite SPA.
 
 > **Do not deploy until a human approves.** This document is configuration-only.
 

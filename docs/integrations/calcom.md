@@ -2,7 +2,7 @@
 
 ## Role
 
-Cal.com API v2 provides availability and booking. SignalFlow stores booking UIDs as `cal_event_id` and syncs status from webhooks.
+Cal.com API v2 provides availability and booking. ForgeLinq stores booking UIDs as `cal_event_id` and syncs status from webhooks.
 
 ## Credentials
 

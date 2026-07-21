@@ -156,6 +156,7 @@ class CalComClient:
                 "name": request.name,
                 "email": request.email,
                 "timeZone": request.timezone or "UTC",
+                "language": "en",
             },
             "metadata": {"service": request.service, "business_id": request.business_id},
         }
@@ -182,14 +183,22 @@ class CalComClient:
             headers=headers,
             json_body=body,
         )
-        data = payload.get("data", payload)
+        # Accept both envelope {status, data} and bare data.
+        if isinstance(payload, dict) and payload.get("status") not in {None, "success"}:
+            raise ProviderValidationError(
+                f"Cal.com booking rejected: {payload.get('status') or 'unknown'}"
+            )
+        data = payload.get("data", payload) if isinstance(payload, dict) else {}
+        if not isinstance(data, dict):
+            raise ProviderValidationError("Cal.com booking response missing data object")
         booking_uid = data.get("uid") or data.get("bookingUid") or data.get("id")
         if not booking_uid:
             raise ProviderValidationError("Cal.com booking response missing UID")
         start = request.start
+        length = data.get("lengthInMinutes") or data.get("duration") or 30
         return {
             "cal_event_id": str(booking_uid),
             "start_time": start,
-            "end_time": start + timedelta(minutes=int(data.get("lengthInMinutes") or 30)),
+            "end_time": start + timedelta(minutes=int(length)),
             "status": data.get("status") or "booked",
         }

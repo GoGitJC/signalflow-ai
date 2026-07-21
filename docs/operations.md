@@ -1,6 +1,6 @@
 # Operations
 
-Day-2 runbook for SignalFlow AI in production.
+Day-2 runbook for ForgeLinq in production.
 
 ## Health probes
 
