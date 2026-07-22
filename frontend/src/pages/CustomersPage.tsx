@@ -83,7 +83,7 @@ export function CustomersPage({ businessId, callers, calls, appointments, loadin
   );
 }
 
-function CustomerDetail({ caller, calls, appointments, businessId, onClose }: { caller: Caller; calls: Call[]; appointments: Appointment[]; businessId: string; onClose: () => void }) {
+function CustomerDetail({ caller, calls, appointments, businessId: _businessId, onClose }: { caller: Caller; calls: Call[]; appointments: Appointment[]; businessId: string; onClose: () => void }) {
   const [notes, setNotes] = useState(caller.notes ?? "");
   const [tags, setTags] = useState(caller.tags.join(", "));
   const save = async () => {
