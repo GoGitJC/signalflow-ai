@@ -57,6 +57,51 @@ def _reject_placeholder_attendee(request: BookingRequest, *, live_mode: bool) ->
         )
 
 
+def _ensure_call_for_retell_id(db: Session, *, business_id: str, retell_call_id: str) -> Call:
+    """Resolve Call by Retell ID; create a stub row if the webhook has not arrived yet."""
+    call = db.scalar(
+        select(Call).where(
+            Call.retell_call_id == retell_call_id,
+            Call.business_id == business_id,
+        )
+    )
+    if call is not None:
+        return call
+
+    # Wrong-tenant collision: Retell IDs are globally unique in our schema.
+    other = db.scalar(select(Call).where(Call.retell_call_id == retell_call_id))
+    if other is not None and other.business_id != business_id:
+        raise HTTPException(status_code=409, detail="Retell call ID belongs to another business")
+
+    call = Call(
+        business_id=business_id,
+        retell_call_id=retell_call_id,
+        direction="inbound",
+        started_at=datetime.now(UTC),
+    )
+    try:
+        with db.begin_nested():
+            db.add(call)
+            db.flush()
+    except IntegrityError:
+        recovered = db.scalar(select(Call).where(Call.retell_call_id == retell_call_id))
+        if recovered is None or recovered.business_id != business_id:
+            raise HTTPException(
+                status_code=409, detail="Unable to resolve Retell call for booking"
+            ) from None
+        return recovered
+    return call
+
+
+def _attach_call_if_missing(db: Session, appointment: Appointment, call_id: str | None) -> None:
+    if not call_id or appointment.call_id:
+        return
+    appointment.call_id = call_id
+    call = db.get(Call, call_id)
+    if call is not None:
+        call.appointment_booked = True
+
+
 def _resolve_call_id(db: Session, request: BookingRequest) -> str | None:
     if request.call_id:
         call = db.scalar(
@@ -69,15 +114,11 @@ def _resolve_call_id(db: Session, request: BookingRequest) -> str | None:
             raise HTTPException(status_code=404, detail="Call not found for business")
         return call.id
     if request.retell_call_id:
-        call = db.scalar(
-            select(Call).where(
-                Call.retell_call_id == request.retell_call_id,
-                Call.business_id == request.business_id,
-            )
-        )
-        if call is None:
-            return None
-        return call.id
+        # Unknown Retell call IDs are handled by creating a stub Call so the
+        # appointment links even if call_started races behind book_appointment.
+        return _ensure_call_for_retell_id(
+            db, business_id=request.business_id, retell_call_id=request.retell_call_id
+        ).id
     return None
 
 
@@ -124,6 +165,9 @@ def book_appointment_transactional(
         )
     )
     if existing and existing.cal_event_id:
+        call_id = _resolve_call_id(db, request)
+        _attach_call_if_missing(db, existing, call_id)
+        db.commit()
         logger.info(
             "booking_duplicate_local correlation_id=%s appointment_id=%s cal_event_id=%s",
             correlation_id,
@@ -248,6 +292,8 @@ def book_appointment_transactional(
         )
     )
     if by_uid is not None:
+        _attach_call_if_missing(db, by_uid, call_id)
+        db.commit()
         logger.info(
             "booking_idempotent_uid correlation_id=%s appointment_id=%s cal_event_id=%s",
             correlation_id,
@@ -305,6 +351,10 @@ def book_appointment_transactional(
         )
         if recovered is None:
             raise
+        # Re-resolve after rollback; attach call link if the race left it null.
+        recovered_call_id = _resolve_call_id(db, request)
+        _attach_call_if_missing(db, recovered, recovered_call_id)
+        db.commit()
         logger.info(
             "booking_integrity_recovered correlation_id=%s appointment_id=%s cal_event_id=%s",
             correlation_id,
