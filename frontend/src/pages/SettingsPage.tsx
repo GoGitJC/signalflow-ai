@@ -139,7 +139,7 @@ export function SettingsPage({ businessId: initialBusinessId }: { businessId: st
   const [auditSource, setAuditSource] = useState<"all" | "auth" | "integration">("all");
   const [exporting, setExporting] = useState<string | null>(null);
   const [profile, setProfile] = useState({
-    name: "ForgeLinq Demo Business",
+    name: "Verideum Demo Business",
     phone: "",
     forwarding: "",
     timezone: "America/Chicago",

@@ -1,6 +1,6 @@
-# ForgeLinq
+# Verideum
 
-Multi-tenant AI receptionist platform for service businesses. ForgeLinq answers inbound calls, captures lead intent, books appointments, and gives operators a dashboard for calls, appointments, and knowledge-base content.
+Multi-tenant AI receptionist platform for service businesses. Verideum answers inbound calls, captures lead intent, books appointments, and gives operators a dashboard for calls, appointments, and knowledge-base content.
 
 This repository is the production-oriented MVP foundation: FastAPI + PostgreSQL backend, React dashboard, Docker Compose local stack, and mock Retell / Twilio / Cal.com adapters for a complete offline completed-call path.
 

@@ -1,6 +1,6 @@
 # Authentication
 
-SignalFlow uses **HttpOnly cookie sessions** for the dashboard. JWTs are never stored in `localStorage`.
+Verideum uses **HttpOnly cookie sessions** for the dashboard. JWTs are never stored in `localStorage`.
 
 ## Session cookies
 

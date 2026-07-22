@@ -1,6 +1,6 @@
 # Production readiness
 
-SignalFlow AI is **not production-ready for untrusted multi-tenant traffic** until authentication and the Final Production Acceptance Checklist are complete. Use this document before accepting real callers.
+Verideum is **not production-ready for untrusted multi-tenant traffic** until authentication and the Final Production Acceptance Checklist are complete. Use this document before accepting real callers.
 
 ## Integration status (engineering)
 
@@ -22,11 +22,11 @@ Complete before enabling live booking in a shared/production environment:
 
 - [ ] Successful live booking with **valid** attendee name, email, and phone
 - [ ] Booking appears in **Cal.com** for the mapped event type
-- [ ] Appointment appears in the **SignalFlow** dashboard under the correct business
+- [ ] Appointment appears in the **Verideum** dashboard under the correct business
 - [ ] Cal.com booking **UID** stored locally as `appointments.cal_event_id`
 - [ ] Booking **confirmation SMS** delivered (Twilio live path or approved substitute)
 - [ ] **Duplicate booking protection** verified (second identical book does not create a second Cal.com event)
-- [ ] Booking **cancellation** verified (Cal.com cancel syncs or is reconciled in SignalFlow)
+- [ ] Booking **cancellation** verified (Cal.com cancel syncs or is reconciled in Verideum)
 
 Until this checklist is signed off, leave `ALLOW_LIVE_BOOKING=false`.
 

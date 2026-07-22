@@ -339,7 +339,7 @@ def seed_demo(*, reset: bool = False) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Seed SignalFlow HVAC demo tenant")
+    parser = argparse.ArgumentParser(description="Seed Verideum HVAC demo tenant")
     parser.add_argument("--reset", action="store_true", help="Delete and recreate demo business")
     args = parser.parse_args()
     business_id = seed_demo(reset=args.reset)

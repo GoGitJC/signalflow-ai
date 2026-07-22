@@ -1,6 +1,6 @@
 # Monitoring
 
-Production monitoring preparation for ForgeLinq.
+Production monitoring preparation for Verideum.
 
 ## Built-in metrics (`GET /metrics`)
 

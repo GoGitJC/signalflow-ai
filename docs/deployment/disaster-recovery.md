@@ -1,6 +1,6 @@
 # Disaster recovery
 
-Procedures for SignalFlow AI production (Render Postgres + Render API + Vercel frontend).
+Procedures for Verideum production (Render Postgres + Render API + Vercel frontend).
 
 ## RTO / RPO targets (initial)
 

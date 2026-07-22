@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start the local SignalFlow stack from a clean slate (optional) or rebuild in place.
+# Start the local Verideum stack from a clean slate (optional) or rebuild in place.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"

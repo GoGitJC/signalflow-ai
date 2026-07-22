@@ -1,6 +1,6 @@
 # UI design system
 
-SignalFlow AI’s dashboard is designed to feel like premium B2B software in the same class as Linear, Stripe, Vercel, and Mercury: quiet confidence, dense when needed, never noisy.
+Verideum’s dashboard is designed to feel like premium B2B software in the same class as Linear, Stripe, Vercel, and Mercury: quiet confidence, dense when needed, never noisy.
 
 ## Design philosophy
 

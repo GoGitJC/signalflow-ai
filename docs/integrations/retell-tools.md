@@ -1,13 +1,24 @@
-# Retell agent configuration for ForgeLinq custom tools
+# Retell agent configuration for Verideum custom tools
 
 ## Tools (source of truth)
 
-Do **not** enable Retell-native Cal.com booking tools. Use ForgeLinq custom functions:
+Do **not** enable Retell-native Cal.com booking tools. Use Verideum custom functions:
 
 | Tool | Method | Path |
 |------|--------|------|
 | `check_availability` | POST | `{APP_PUBLIC_API_URL}/api/retell/tools/check_availability` |
 | `book_appointment` | POST | `{APP_PUBLIC_API_URL}/api/retell/tools/book_appointment` |
+
+## Call linking
+
+Expected live path:
+
+1. Retell sends signed `call_started` to `/api/webhooks/retell` → Verideum `calls` row (`retell_call_id`).
+2. During the call, tools receive the Retell envelope; `call.call_id` is copied to `retell_call_id`.
+3. `book_appointment` resolves (or creates a stub) `Call` by `retell_call_id` and sets `appointments.call_id`.
+4. If booking races ahead of the webhook, a stub `Call` is created; the later signed webhook is idempotent.
+
+Do **not** disable signature verification. Live mode verifies `X-Retell-Signature` with the Retell API key.
 
 ## Payload mode
 
@@ -17,7 +28,7 @@ Prefer Retell **custom function envelope**:
 { "name": "book_appointment", "call": { "call_id": "...", "agent_id": "..." }, "args": { ... } }
 ```
 
-ForgeLinq also accepts **args-only** flat bodies when that Retell setting is enabled.
+Verideum also accepts **args-only** flat bodies when that Retell setting is enabled.
 
 Malformed envelopes (`call` without `args`) return HTTP **422**.
 

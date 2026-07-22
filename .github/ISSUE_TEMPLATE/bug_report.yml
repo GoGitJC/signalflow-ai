@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a defect in SignalFlow AI
+description: Report a defect in Verideum
 title: "[bug] "
 labels: ["bug"]
 body:

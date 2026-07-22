@@ -1,4 +1,4 @@
-# Contributing to SignalFlow AI
+# Contributing to Verideum
 
 Thanks for contributing. GitHub is the authoritative project record for issues, pull requests, and releases.
 

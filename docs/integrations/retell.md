@@ -2,7 +2,7 @@
 
 ## Role
 
-Retell provides the voice agent. ForgeLinq maps each Retell agent to one business, ingests webhooks, and exposes tool endpoints for availability and booking.
+Retell provides the voice agent. Verideum maps each Retell agent to one business, ingests webhooks, and exposes tool endpoints for availability and booking.
 
 ## Credentials
 

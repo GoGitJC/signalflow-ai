@@ -1,7 +1,7 @@
 [project]
 name = "signalflow-backend"
 version = "0.1.0"
-description = "SignalFlow AI multi-tenant receptionist backend"
+description = "Verideum multi-tenant receptionist backend"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115,<1",

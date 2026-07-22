@@ -1,4 +1,4 @@
-# Render Blueprint — SignalFlow AI production backend + managed Postgres.
+# Render Blueprint — Verideum production backend + managed Postgres.
 # Docs: docs/deployment/render.md
 #
 # Replace <DOMAIN> before applying, or set values in the Render dashboard.
