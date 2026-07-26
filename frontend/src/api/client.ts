@@ -293,22 +293,22 @@ export const api = {
     anchor.click();
     URL.revokeObjectURL(url);
   },
-  retellStatus: (businessId: string) =>
+  retellStatus: (_businessId: string) =>
     request<RetellIntegrationStatus>("/api/integrations/retell/status"),
   saveRetell: (
-    businessId: string,
+    _businessId: string,
     payload: { api_key: string; agent_id?: string; agent_name?: string; confirm_replace?: boolean },
   ) =>
     request<RetellIntegrationStatus>("/api/integrations/retell", {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  testRetell: (businessId: string) =>
+  testRetell: (_businessId: string) =>
     request<ConnectionTestResult>("/api/integrations/retell/test", { method: "POST" }),
-  calcomStatus: (businessId: string) =>
+  calcomStatus: (_businessId: string) =>
     request<CalComIntegrationStatus>("/api/integrations/calcom/status"),
   saveCalcom: (
-    businessId: string,
+    _businessId: string,
     payload: {
       api_key: string;
       event_type_id?: string;
@@ -321,6 +321,6 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  testCalcom: (businessId: string) =>
+  testCalcom: (_businessId: string) =>
     request<ConnectionTestResult>("/api/integrations/calcom/test", { method: "POST" }),
 };

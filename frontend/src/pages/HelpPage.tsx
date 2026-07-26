@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+
 export function HelpPage() {
   return (
     <div className="space-y-6">
@@ -51,7 +53,7 @@ export function HelpPage() {
             <p>`docs/demo-data.md` — HVAC demo seed</p>
             <p>`docs/deployment.md` — HTTPS, cookies, hosts</p>
             <p>`docs/production-readiness.md` — go-live checklist</p>
-            <p>OpenAPI: `http://localhost:8000/docs`</p>
+            <p>OpenAPI: {API_BASE ? `${API_BASE}/docs` : "`VITE_API_URL`/docs"}</p>
           </CardContent>
         </Card>
         <Card>

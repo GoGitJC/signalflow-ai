@@ -12,8 +12,15 @@ os.environ["OWNER_API_TOKEN"] = "test-owner-token"
 os.environ["JWT_SECRET"] = "test-jwt-secret-not-for-production"
 os.environ["RATE_LIMIT_ENABLED"] = "false"
 os.environ["LOG_JSON"] = "false"
+os.environ["ALLOW_LIVE_BOOKING"] = "false"
 os.environ["SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY"] = Fernet.generate_key().decode()
 os.environ["SIGNALFLOW_RETELL_WEBHOOK_SECRET"] = "test-webhook-secret"
+# Isolate unit tests from host live Cal.com/Retell env
+os.environ.pop("CALCOM_EVENT_TYPE_ID", None)
+os.environ.pop("CALCOM_EVENT_TYPE_SLUG", None)
+os.environ.pop("CALCOM_USERNAME", None)
+os.environ.pop("CALCOM_API_KEY", None)
+os.environ.pop("RETELL_API_KEY", None)
 
 import pytest
 from fastapi.testclient import TestClient

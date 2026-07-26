@@ -23,9 +23,19 @@ class CalComClient:
     ):
         self.api_key = api_key
         self.settings = settings or get_settings()
-        self.event_type_id = event_type_id or self.settings.calcom_event_type_id
-        self.event_type_slug = event_type_slug or self.settings.calcom_event_type_slug
-        self.username = username or self.settings.calcom_username
+        # Explicit slug/username tests must not inherit a host CALCOM_EVENT_TYPE_ID.
+        if event_type_id is not None:
+            self.event_type_id = event_type_id
+        elif event_type_slug is not None:
+            self.event_type_id = None
+        else:
+            self.event_type_id = self.settings.calcom_event_type_id or None
+        self.event_type_slug = (
+            event_type_slug
+            if event_type_slug is not None
+            else self.settings.calcom_event_type_slug
+        )
+        self.username = username if username is not None else self.settings.calcom_username
         self.base_url = self.settings.calcom_api_base_url.rstrip("/")
 
     def _headers(self, *, api_version: str | None = None) -> dict[str, str]:

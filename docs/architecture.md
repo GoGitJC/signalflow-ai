@@ -2,7 +2,7 @@
 
 ## Purpose
 
-SignalFlow AI is a multi-tenant platform that connects voice AI (Retell), telephony/SMS (Twilio), and scheduling (Cal.com) to a business-scoped PostgreSQL data model and operator dashboard.
+Verideum is a multi-tenant platform that connects voice AI (Retell), telephony/SMS (Twilio), and scheduling (Cal.com) to a business-scoped PostgreSQL data model and operator dashboard.
 
 ## High-level components
 

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ForgeLinq are documented in this file.
+All notable changes to Verideum are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/) where practical.
@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/) where pra
 
 ### Changed
 
-- Product branding (user-facing): SignalFlow AI → **ForgeLinq** (repo/package/env names unchanged).
+- Product branding (user-facing): Verideum → **Verideum** (repo/package/env names unchanged).
 - Retell agent listing uses `POST /v2/list-agents` with voice filter + pagination (`items` / `has_more` / `pagination_key`).
 
 ### Added

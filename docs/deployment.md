@@ -1,6 +1,6 @@
 # Deployment
 
-Production topology for ForgeLinq:
+Production topology for Verideum:
 
 ```text
 Internet

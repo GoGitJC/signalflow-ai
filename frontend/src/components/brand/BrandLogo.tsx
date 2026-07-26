@@ -29,7 +29,7 @@ export function BrandLogo({
       </svg>
       {showWordmark ? (
         <div className="leading-tight">
-          <div className="text-sm font-semibold tracking-tight">ForgeLinq</div>
+          <div className="text-sm font-semibold tracking-tight">Verideum</div>
           <div className="text-[11px] opacity-70">Receptionist OS</div>
         </div>
       ) : null}

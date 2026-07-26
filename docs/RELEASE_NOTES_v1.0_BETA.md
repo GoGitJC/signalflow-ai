@@ -1,12 +1,12 @@
-# SignalFlow AI v1.0 Beta — Release Notes
+# Verideum v1.0 Beta — Release Notes
 
-**Release:** SignalFlow AI v1.0 Beta  
+**Release:** Verideum v1.0 Beta  
 **Audience:** Closed-beta operators and first design partners  
 **Date:** 2026-07-16
 
 ## What’s included
 
-SignalFlow AI is an AI receptionist OS for service businesses: inbound voice, appointment booking, CRM, and operator dashboard.
+Verideum is an AI receptionist OS for service businesses: inbound voice, appointment booking, CRM, and operator dashboard.
 
 This beta ships a production-oriented foundation suitable for a **closed pilot** with `ALLOW_LIVE_BOOKING=false` until Final Acceptance is signed off.
 

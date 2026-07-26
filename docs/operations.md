@@ -1,6 +1,6 @@
 # Operations
 
-Day-2 runbook for ForgeLinq in production.
+Day-2 runbook for Verideum in production.
 
 ## Health probes
 

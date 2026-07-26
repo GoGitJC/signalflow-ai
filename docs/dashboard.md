@@ -1,6 +1,6 @@
 # Dashboard product guide
 
-SignalFlow AI’s dashboard is the daily operating surface for owners and staff: CRM, call intelligence, appointments, analytics, voice configuration, knowledge, and settings.
+Verideum’s dashboard is the daily operating surface for owners and staff: CRM, call intelligence, appointments, analytics, voice configuration, knowledge, and settings.
 
 ## Navigation
 

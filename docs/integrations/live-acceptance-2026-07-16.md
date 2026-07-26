@@ -63,7 +63,7 @@ Live mode, connected Retell/Cal.com status, public `/health` 200, gate probe 403
 | Local appointment | Not created (expected when Cal.com rejects the request) |
 | Operator follow-up | Stopped further live booking attempts; gate left **false** |
 
-A diagnostic probe with a syntactically valid email successfully created (and later cancelled) a Cal.com booking for the same slot family, which supports classifying the Phase C failure as **input validation / test data**, not a missing SignalFlow booking path.
+A diagnostic probe with a syntactically valid email successfully created (and later cancelled) a Cal.com booking for the same slot family, which supports classifying the Phase C failure as **input validation / test data**, not a missing Verideum booking path.
 
 ---
 
@@ -74,7 +74,7 @@ Do **not** treat as open engineering work on this branch. Track under release re
 See **[Final Production Acceptance Checklist](../production-readiness.md#final-production-acceptance-checklist)**:
 
 - Successful live booking with **valid** customer attendee information  
-- Booking visible in Cal.com and SignalFlow  
+- Booking visible in Cal.com and Verideum  
 - Booking UID stored locally  
 - Confirmation SMS  
 - Duplicate protection  

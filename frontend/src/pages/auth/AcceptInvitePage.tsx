@@ -37,7 +37,7 @@ export function AcceptInvitePage() {
   };
 
   return (
-    <AuthShell title="Accept invitation" subtitle="Join your team’s ForgeLinq workspace.">
+    <AuthShell title="Accept invitation" subtitle="Join your team’s Verideum workspace.">
       <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
         <div className="grid gap-2">
           <Label htmlFor="token">Invite token</Label>

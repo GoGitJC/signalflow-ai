@@ -1,4 +1,4 @@
-# ForgeLinq — Launch Checklist
+# Verideum — Launch Checklist
 
 Public production launch gate. Complete every item (or explicitly waive with owner sign-off).
 

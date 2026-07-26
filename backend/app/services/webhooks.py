@@ -137,7 +137,6 @@ def process_completed_call(
 
     appointment = None
     if payload.appointment:
-        appointment = None
         if payload.appointment.cal_event_id:
             appointment = db.scalar(
                 select(Appointment).where(
@@ -156,6 +155,12 @@ def process_completed_call(
                 status=payload.appointment.status,
             )
             db.add(appointment)
+        elif appointment.call_id is None:
+            # Book-first path: tool created the appointment before call_ended.
+            appointment.call_id = call.id
+            call.appointment_booked = True
+        elif appointment.call_id == call.id:
+            call.appointment_booked = True
     db.commit()
     db.refresh(call)
     if appointment:

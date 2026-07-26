@@ -1,19 +1,19 @@
-# Render Blueprint — SignalFlow AI production backend + managed Postgres.
+# Render Blueprint — Verideum production backend + managed Postgres.
 # Docs: docs/deployment/render.md
 #
-# Replace <DOMAIN> before applying, or set values in the Render dashboard.
-# Do NOT put real secrets in this file — use Render secret env vars / sync.
+# Set secret values in the Render dashboard (sync: false).
+# Do NOT put real secrets in this file.
 
 databases:
-  - name: signalflow-db
+  - name: verideum-db
     plan: basic-256mb
-    databaseName: signalflow
-    user: signalflow
+    databaseName: verideum
+    user: verideum
     postgresMajorVersion: "16"
 
 services:
   - type: web
-    name: signalflow-api
+    name: verideum-api
     runtime: docker
     plan: starter
     region: oregon
@@ -29,20 +29,16 @@ services:
         value: production
       - key: SIGNALFLOW_DATABASE_URL
         fromDatabase:
-          name: signalflow-db
+          name: verideum-db
           property: connectionString
       - key: APP_PUBLIC_API_URL
-        sync: false
-        # Set to https://api.<DOMAIN>
+        value: https://api.verideum.com
       - key: CORS_ORIGINS
-        sync: false
-        # Set to https://www.<DOMAIN>,https://app.<DOMAIN>
+        value: https://verideum.com,https://www.verideum.com,https://app.verideum.com
       - key: SIGNALFLOW_FRONTEND_ORIGIN
-        sync: false
-        # Primary dashboard origin, e.g. https://www.<DOMAIN>
+        value: https://app.verideum.com
       - key: TRUSTED_HOSTS
-        sync: false
-        # e.g. api.<DOMAIN>,*.onrender.com
+        value: api.verideum.com,verideum.com,www.verideum.com,app.verideum.com,*.onrender.com
       - key: AUTH_COOKIE_SECURE
         value: "true"
       - key: AUTH_COOKIE_SAMESITE
@@ -70,7 +66,7 @@ services:
       - key: RETELL_AGENT_NAME
         sync: false
       - key: RETELL_WEBHOOK_BASE_URL
-        sync: false
+        value: https://api.verideum.com
       - key: SIGNALFLOW_RETELL_WEBHOOK_SECRET
         sync: false
       - key: CALCOM_API_KEY
