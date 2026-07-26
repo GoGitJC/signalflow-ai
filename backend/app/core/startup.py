@@ -15,6 +15,10 @@ def validate_production_settings(settings: Settings) -> None:
         missing.append("JWT_SECRET")
     if not settings.credential_encryption_key:
         missing.append("SIGNALFLOW_CREDENTIAL_ENCRYPTION_KEY")
+    if not settings.database_url:
+        missing.append("SIGNALFLOW_DATABASE_URL or DATABASE_URL")
+    elif "@db:" in settings.database_url:
+        missing.append("DATABASE_URL must not use Docker Compose hostname 'db'")
     origins = settings.cors_origin_list
     if not origins:
         missing.append("CORS_ORIGINS or SIGNALFLOW_FRONTEND_ORIGIN")

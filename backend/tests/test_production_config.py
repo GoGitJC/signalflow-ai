@@ -24,6 +24,29 @@ def test_database_url_render_normalization(monkeypatch):
     assert settings.database_url.startswith("postgresql+psycopg://")
 
 
+def test_database_url_accepts_render_database_url_alias(monkeypatch):
+    monkeypatch.delenv("SIGNALFLOW_DATABASE_URL", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@dpg-xyz:5432/verideum")
+    settings = Settings()
+    assert settings.database_url.startswith("postgresql+psycopg://")
+    assert "@db:" not in settings.database_url
+
+
+def test_production_rejects_compose_db_hostname(monkeypatch):
+    monkeypatch.setenv("SIGNALFLOW_ENVIRONMENT", "production")
+    monkeypatch.setenv(
+        "SIGNALFLOW_DATABASE_URL",
+        "postgresql+psycopg://signalflow:signalflow@db:5432/signalflow",
+    )
+    raised = False
+    try:
+        Settings()
+    except ValueError as exc:
+        raised = True
+        assert "db" in str(exc).lower()
+    assert raised
+
+
 def test_production_validation_rejects_localhost_cors(monkeypatch):
     monkeypatch.setenv("SIGNALFLOW_ENVIRONMENT", "production")
     monkeypatch.setenv("APP_ENV", "production")
@@ -32,6 +55,10 @@ def test_production_validation_rejects_localhost_cors(monkeypatch):
     monkeypatch.setenv("AUTH_COOKIE_SECURE", "true")
     monkeypatch.setenv("CORS_ORIGINS", "http://localhost:5173")
     monkeypatch.setenv("APP_PUBLIC_API_URL", "https://api.example.com")
+    monkeypatch.setenv(
+        "SIGNALFLOW_DATABASE_URL",
+        "postgresql+psycopg://user:pass@host:5432/verideum",
+    )
     settings = Settings()
     try:
         validate_production_settings(settings)

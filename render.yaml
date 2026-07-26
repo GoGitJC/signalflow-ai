@@ -3,6 +3,9 @@
 #
 # Set secret values in the Render dashboard (sync: false).
 # Do NOT put real secrets in this file.
+#
+# IMPORTANT: Never set DATABASE_URL / SIGNALFLOW_DATABASE_URL to a Docker
+# Compose hostname (`@db:`). Always use fromDatabase connectionString.
 
 databases:
   - name: verideum-db
@@ -13,10 +16,11 @@ databases:
 
 services:
   - type: web
-    name: verideum-api
+    name: verideum-ai
     runtime: docker
     plan: starter
     region: oregon
+    branch: main
     rootDir: backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -27,18 +31,24 @@ services:
         value: production
       - key: APP_ENV
         value: production
+      # Render Postgres internal URL (also accepted as DATABASE_URL by the app).
       - key: SIGNALFLOW_DATABASE_URL
         fromDatabase:
           name: verideum-db
           property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: verideum-db
+          property: connectionString
+      # Temporary public URL until api.verideum.com DNS is connected.
       - key: APP_PUBLIC_API_URL
-        value: https://api.verideum.com
+        value: https://verideum-ai.onrender.com
       - key: CORS_ORIGINS
-        value: https://verideum.com,https://www.verideum.com,https://app.verideum.com
+        value: https://verideum-app.vercel.app,https://verideum.com,https://www.verideum.com,https://app.verideum.com
       - key: SIGNALFLOW_FRONTEND_ORIGIN
-        value: https://app.verideum.com
+        value: https://verideum-app.vercel.app
       - key: TRUSTED_HOSTS
-        value: api.verideum.com,verideum.com,www.verideum.com,app.verideum.com,*.onrender.com
+        value: verideum-ai.onrender.com,api.verideum.com,verideum.com,www.verideum.com,app.verideum.com,*.onrender.com
       - key: AUTH_COOKIE_SECURE
         value: "true"
       - key: AUTH_COOKIE_SAMESITE
@@ -65,8 +75,9 @@ services:
         sync: false
       - key: RETELL_AGENT_NAME
         sync: false
+      # Do not switch Retell dashboard URLs until this backend is healthy.
       - key: RETELL_WEBHOOK_BASE_URL
-        value: https://api.verideum.com
+        value: https://verideum-ai.onrender.com
       - key: SIGNALFLOW_RETELL_WEBHOOK_SECRET
         sync: false
       - key: CALCOM_API_KEY

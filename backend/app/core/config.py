@@ -11,7 +11,12 @@ class Settings(BaseSettings):
         default="development",
         validation_alias=AliasChoices("SIGNALFLOW_ENVIRONMENT", "APP_ENV", "ENVIRONMENT"),
     )
-    database_url: str = "postgresql+psycopg://signalflow:signalflow@db:5432/signalflow"
+    # Prefer env (Compose sets @db; Render must set DATABASE_URL / SIGNALFLOW_DATABASE_URL).
+    # Empty default avoids silently connecting to Docker hostname "db" in production.
+    database_url: str = Field(
+        default="",
+        validation_alias=AliasChoices("SIGNALFLOW_DATABASE_URL", "DATABASE_URL"),
+    )
     frontend_origin: str = Field(
         default="http://localhost:5173",
         validation_alias=AliasChoices("SIGNALFLOW_FRONTEND_ORIGIN", "FRONTEND_ORIGIN"),
@@ -102,6 +107,25 @@ class Settings(BaseSettings):
         if isinstance(value, str) and value.startswith("postgres://"):
             return "postgresql+psycopg://" + value.removeprefix("postgres://")
         return value
+
+    @model_validator(mode="after")
+    def reject_compose_db_host_in_production(self) -> "Settings":
+        """Fail fast if production still points at Docker Compose hostname `db`."""
+        if self.environment.lower() not in {"production", "prod"}:
+            return self
+        url = (self.database_url or "").strip()
+        if not url:
+            raise ValueError(
+                "Production requires SIGNALFLOW_DATABASE_URL or DATABASE_URL "
+                "(Render Postgres internal URL)."
+            )
+        # Match host "db" only (Compose service), not substrings in usernames/passwords.
+        if "@db:" in url or url.rstrip("/").endswith("@db") or "/@db/" in url:
+            raise ValueError(
+                "Production DATABASE_URL must not use Docker Compose hostname 'db'. "
+                "Attach Render Postgres and set DATABASE_URL / SIGNALFLOW_DATABASE_URL."
+            )
+        return self
 
     @model_validator(mode="after")
     def sync_integration_mode(self) -> "Settings":
